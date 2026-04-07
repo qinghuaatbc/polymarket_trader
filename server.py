@@ -1,7 +1,7 @@
 """
-Polymarket 预测交易系统 — Web 服务器
-运行: python3 server.py
-访问: http://localhost:8002
+Polymarket Prediction Trading System — Web Server
+Run: python3 server.py
+Visit: http://localhost:8002
 """
 from __future__ import annotations
 import json
@@ -27,7 +27,7 @@ _market_cache: list[dict] = []
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 预加载市场数据
+    # Preload market data
     try:
         markets = _poly.fetch_markets(limit=50)
         _market_cache.extend([m.__dict__ for m in markets])
@@ -39,7 +39,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Polymarket Trader", lifespan=lifespan)
 
 
-# ── 市场数据 ──────────────────────────────────────────────────────────────────
+# ── Market data ───────────────────────────────────────────────────────────────
 
 @app.get("/api/markets")
 def api_markets(limit: int = 50, category: str = "", closed: bool = False):
@@ -70,7 +70,7 @@ def api_market(slug: str):
         raise HTTPException(500, str(e))
 
 
-# ── Phase 1: 预测日志 ─────────────────────────────────────────────────────────
+# ── Phase 1: Prediction journal ───────────────────────────────────────────────
 
 class PredictionIn(BaseModel):
     market_slug: str
@@ -100,7 +100,7 @@ def api_pred_stats():
     return prediction_stats()
 
 
-# ── Phase 2: 纸上交易 ─────────────────────────────────────────────────────────
+# ── Phase 2: Paper trading ────────────────────────────────────────────────────
 
 class TradeIn(BaseModel):
     market_slug: str
@@ -132,7 +132,7 @@ def api_reset(balance: float = 1000.0):
     return reset_paper_account(balance)
 
 
-# ── Phase 4: AI 分析 ──────────────────────────────────────────────────────────
+# ── Phase 4: AI analysis ──────────────────────────────────────────────────────
 
 class AnalyseIn(BaseModel):
     question: str
@@ -162,14 +162,14 @@ def api_daily_summary():
     return {"summary": summary}
 
 
-# ── 设置 ──────────────────────────────────────────────────────────────────────
+# ── Settings ──────────────────────────────────────────────────────────────────
 
 @app.get("/api/settings")
 def api_settings():
     return get_settings()
 
 
-# ── 主页 ──────────────────────────────────────────────────────────────────────
+# ── Homepage ──────────────────────────────────────────────────────────────────
 
 @app.get("/", response_class=HTMLResponse)
 def index():

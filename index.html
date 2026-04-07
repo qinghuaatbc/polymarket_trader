@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="en" id="html-root">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Polymarket 预测交易系统</title>
+<title>Polymarket Prediction Trader</title>
 <style>
 :root{
   --bg:#0f1117;--surface:#161b27;--surface2:#1e2636;--border:#2a3347;
@@ -107,31 +107,31 @@ textarea{resize:vertical;min-height:70px}
 <aside class="sidebar">
   <div class="logo">
     <h1>📊 PM Trader</h1>
-    <p>Polymarket 预测系统</p>
+    <p>Polymarket Prediction System</p>
   </div>
   <nav class="nav">
     <button class="nav-item active" onclick="showPage('overview')">
-      <span class="nav-icon">🏠</span> 总览
+      <span class="nav-icon">🏠</span> Overview
     </button>
     <button class="nav-item" onclick="showPage('markets')">
-      <span class="nav-icon">📈</span> 市场浏览
-      <span class="phase-badge p1">阶段1</span>
+      <span class="nav-icon">📈</span> Markets
+      <span class="phase-badge p1">Phase 1</span>
     </button>
     <button class="nav-item" onclick="showPage('journal')">
-      <span class="nav-icon">📓</span> 预测日志
-      <span class="phase-badge p1">阶段1</span>
+      <span class="nav-icon">📓</span> Journal
+      <span class="phase-badge p1">Phase 1</span>
     </button>
     <button class="nav-item" onclick="showPage('paper')">
-      <span class="nav-icon">💸</span> 纸上交易
-      <span class="phase-badge p2">阶段2</span>
+      <span class="nav-icon">💸</span> Paper Trading
+      <span class="phase-badge p2">Phase 2</span>
     </button>
     <button class="nav-item" onclick="showPage('ai')">
-      <span class="nav-icon">🤖</span> AI 分析
-      <span class="phase-badge p4">阶段4</span>
+      <span class="nav-icon">🤖</span> AI Analysis
+      <span class="phase-badge p4">Phase 4</span>
     </button>
     <button class="nav-item" onclick="showPage('resolved')">
-      <span class="nav-icon">✅</span> 已结算
-      <span class="phase-badge p1">学习</span>
+      <span class="nav-icon">✅</span> Resolved
+      <span class="phase-badge p1">Learn</span>
     </button>
   </nav>
 </aside>
@@ -139,45 +139,46 @@ textarea{resize:vertical;min-height:70px}
 <!-- Main -->
 <main class="main">
   <div class="topbar">
-    <h2 id="page-title">总览</h2>
-    <div style="display:flex;gap:8px">
-      <button class="btn btn-outline btn-sm" onclick="loadPage()">↻ 刷新</button>
+    <h2 id="page-title">Overview</h2>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn btn-outline btn-sm" onclick="toggleLang()" id="lang-btn" style="min-width:42px">中文</button>
+      <button class="btn btn-outline btn-sm" onclick="loadPage()">↻</button>
     </div>
   </div>
-  <div class="content" id="content">加载中…</div>
+  <div class="content" id="content">Loading…</div>
 </main>
 </div>
 
 <!-- Predict Modal -->
 <div class="modal" id="predict-modal">
   <div class="modal-box">
-    <div class="modal-title">📓 记录预测</div>
+    <div class="modal-title">📓 Record Prediction</div>
     <input type="hidden" id="pm-slug">
     <div class="form-group">
-      <label>市场问题</label>
+      <label>Market Question</label>
       <textarea id="pm-question" rows="2" readonly style="color:var(--muted)"></textarea>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div class="form-group">
-        <label>市场价格 (YES%)</label>
+        <label>Market Price (YES%)</label>
         <input type="number" id="pm-market-price" step="0.01" min="0" max="1" readonly>
       </div>
       <div class="form-group">
-        <label>我认为的概率 (0-1)</label>
+        <label>My Probability (0–1)</label>
         <input type="number" id="pm-my-prob" step="0.01" min="0" max="1" placeholder="0.65">
       </div>
     </div>
     <div class="form-group">
-      <label>分类</label>
-      <input type="text" id="pm-category" placeholder="政治/体育/经济…">
+      <label>Category</label>
+      <input type="text" id="pm-category" placeholder="Politics / Sports / Crypto…">
     </div>
     <div class="form-group">
-      <label>分析理由</label>
-      <textarea id="pm-reasoning" placeholder="为什么你认为这个概率更准确？"></textarea>
+      <label>Reasoning</label>
+      <textarea id="pm-reasoning" placeholder="Why do you think this probability is more accurate?"></textarea>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
-      <button class="btn btn-outline" onclick="closeModal('predict-modal')">取消</button>
-      <button class="btn btn-primary" onclick="submitPrediction()">保存预测</button>
+      <button class="btn btn-outline" onclick="closeModal('predict-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitPrediction()">Save Prediction</button>
     </div>
   </div>
 </div>
@@ -185,40 +186,40 @@ textarea{resize:vertical;min-height:70px}
 <!-- Paper Trade Modal -->
 <div class="modal" id="trade-modal">
   <div class="modal-box">
-    <div class="modal-title">💸 纸上下单</div>
+    <div class="modal-title">💸 Paper Trade</div>
     <input type="hidden" id="tm-slug">
     <div class="form-group">
-      <label>市场问题</label>
+      <label>Market Question</label>
       <textarea id="tm-question" rows="2" readonly style="color:var(--muted)"></textarea>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
       <div class="form-group">
-        <label>方向</label>
+        <label>Side</label>
         <select id="tm-side">
           <option value="YES">YES</option>
           <option value="NO">NO</option>
         </select>
       </div>
       <div class="form-group">
-        <label>买入价格</label>
+        <label>Entry Price</label>
         <input type="number" id="tm-price" step="0.01" min="0" max="1">
       </div>
       <div class="form-group">
-        <label>金额 (USDC)</label>
+        <label>Amount (USDC)</label>
         <input type="number" id="tm-size" step="1" min="1" placeholder="20">
       </div>
     </div>
     <div class="form-group">
-      <label>我认为的概率</label>
+      <label>My Probability</label>
       <input type="number" id="tm-prob" step="0.01" min="0" max="1" placeholder="0.65">
     </div>
     <div class="form-group">
-      <label>理由</label>
-      <textarea id="tm-reason" placeholder="投资逻辑…"></textarea>
+      <label>Reasoning</label>
+      <textarea id="tm-reason" placeholder="Investment thesis…"></textarea>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
-      <button class="btn btn-outline" onclick="closeModal('trade-modal')">取消</button>
-      <button class="btn btn-success" onclick="submitTrade()">确认下单</button>
+      <button class="btn btn-outline" onclick="closeModal('trade-modal')">Cancel</button>
+      <button class="btn btn-success" onclick="submitTrade()">Place Trade</button>
     </div>
   </div>
 </div>
@@ -226,43 +227,232 @@ textarea{resize:vertical;min-height:70px}
 <!-- AI Analyse Modal -->
 <div class="modal" id="ai-modal">
   <div class="modal-box">
-    <div class="modal-title">🤖 AI 深度分析</div>
+    <div class="modal-title">🤖 AI Deep Analysis</div>
     <input type="hidden" id="ai-slug">
     <div class="form-group">
-      <label>问题</label>
+      <label>Question</label>
       <textarea id="ai-question" rows="2"></textarea>
     </div>
     <div class="form-group">
-      <label>市场价格 (YES)</label>
+      <label>Market Price (YES)</label>
       <input type="number" id="ai-price" step="0.01" min="0" max="1">
     </div>
     <div class="form-group">
-      <label>相关新闻 / 背景（可选）</label>
-      <textarea id="ai-news" rows="4" placeholder="粘贴相关新闻标题或摘要…"></textarea>
+      <label>Relevant News / Context (optional)</label>
+      <textarea id="ai-news" rows="4" placeholder="Paste relevant news headlines or summary…"></textarea>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
-      <button class="btn btn-outline" onclick="closeModal('ai-modal')">取消</button>
-      <button class="btn btn-primary" onclick="runAnalysis()">🤖 分析</button>
+      <button class="btn btn-outline" onclick="closeModal('ai-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="runAnalysis()">🤖 Analyze</button>
     </div>
     <div id="ai-result" style="margin-top:16px;display:none"></div>
   </div>
 </div>
 
 <script>
+// ── i18n ──────────────────────────────────────────────────────────────────────
+let lang = localStorage.getItem('lang') || 'en';
+
+const T = {
+  en: {
+    appSub: 'Polymarket Prediction System',
+    navOverview: 'Overview', navMarkets: 'Markets', navJournal: 'Journal',
+    navPaper: 'Paper Trading', navAI: 'AI Analysis', navResolved: 'Resolved',
+    phaseLearn: 'Learn',
+    loading: 'Loading…',
+    refresh: '↻',
+    // Overview
+    totalPreds: 'Total Predictions', resolved: 'Resolved:', winRate: 'Win Rate',
+    target55: 'Target ≥ 55%', paperBal: 'Paper Balance', initial: 'Initial:',
+    paperROI: 'Paper ROI', trades: 'paper trades', phaseProgress: 'Phase Progress',
+    dailyRoutine: 'Daily Routine',
+    routine: '☀️ Morning: Browse 10 markets, record your probability estimates<br>📊 Afternoon: Use AI analysis on interesting markets<br>🌙 Evening: Review resolved markets, check your accuracy<br>📝 Weekly: Track win rate, decide if ready for next phase',
+    recentPreds: 'Recent Predictions',
+    noPreds: 'No predictions yet — go to Markets to start recording',
+    chkPreds: 'Resolved predictions ≥ 10', chkWin: 'Win rate ≥ 55%',
+    chkTrades: 'Paper trades ≥ 20', chkProfit: 'Paper trading profitable',
+    colDate: 'Date', colQuestion: 'Question', colMarket: 'Market',
+    colMyEst: 'My Estimate', colResult: 'Result', colEdge: 'Edge',
+    correct: '✓ Correct', wrong: '✗ Wrong',
+    // Markets
+    searchPH: 'Search markets…', byVolume: 'By Volume', byLiquidity: 'By Liquidity', byPrice: 'By Price',
+    menuMsg: 'Choose action:\n\n📓 Record Prediction → OK\n💸 Paper Trade → Cancel',
+    // Journal
+    totalPreds2: 'Total Predictions', avgEdge: 'Avg Edge',
+    calibTitle: 'Calibration Analysis — How accurate are your estimates?',
+    predicted: 'Predicted', actual: 'Actual',
+    predLog: 'Prediction Log', browseMarkets: '+ Browse Markets',
+    noPreds2: 'No predictions yet — browse markets and click to record',
+    colSide: 'Side', colPrice: 'Price', colSize: 'Size', colPnl: 'P&L',
+    // Paper
+    balance: 'Balance', totalPnl: 'Total P&L', tradesCount: 'Trades', open: 'Open:',
+    readyPhase3: '🎉 Congrats! Win rate and profit targets met — ready to consider Phase 3 (small real trades)',
+    paperTip: '💡 Paper trading phase: simulating $1000 starting balance, max 10% per trade. Browse markets to find positions.',
+    tradeLog: 'Trade Log', resetAccount: 'Reset Account', browseMarkets2: '+ Browse Markets',
+    resetConfirm: 'Reset paper account to $1000?',
+    noTrades: 'No trades yet',
+    // AI
+    aiTip: '🤖 Phase 4 feature: AI analyzes market probabilities to support your judgment. Requires ANTHROPIC_API_KEY.',
+    analyzeMarket: 'Analyze a Market', mktQuestion: 'Market Question',
+    mktPriceLbl: 'Current Market Price (0–1)', relNews: 'Relevant News',
+    analyzeBtn: '🤖 Analyze', analyzing: 'Analyzing…',
+    findOpps: 'Find Opportunities',
+    oppDesc: 'AI scans current markets to identify potentially mispriced opportunities',
+    scanBtn: '🔍 Scan Markets', scanning: 'Scanning…', noOpps: 'No clear opportunities found',
+    dailyReview: 'Daily Review', genSummary: '📊 Generate Daily Summary', generating: 'Generating…',
+    aiYesProb: 'AI YES Probability', edgeVsMkt: 'Edge vs Market', signal: 'Signal (confidence',
+    keyFactors: '📌 Key Factors:', risks: '⚠️ Risks:',
+    // Resolved
+    resolvedTip: '📚 Phase 1 learning: Study resolved markets to see how accurate market pricing was and find patterns.',
+    finalPrice: 'Final Price', outcome: 'Outcome', endDate: 'End Date',
+    // Modals
+    modalPredTitle: '📓 Record Prediction', mktQuestionLbl: 'Market Question',
+    mktPricePct: 'Market Price (YES%)', myProbLbl: 'My Probability (0–1)',
+    myProbPH: '0.65', categoryLbl: 'Category', categoryPH: 'Politics / Sports / Crypto…',
+    reasoningLbl: 'Reasoning', reasoningPH: 'Why do you think this probability is more accurate?',
+    cancel: 'Cancel', savePred: 'Save Prediction',
+    modalTradeTitle: '💸 Paper Trade', sideLbl: 'Side', entryPriceLbl: 'Entry Price',
+    amtLbl: 'Amount (USDC)', myProbLbl2: 'My Probability', reasonLbl: 'Reasoning',
+    reasonPH: 'Investment thesis…', placeTrade: 'Place Trade',
+    alertNeedProb: 'Please enter your probability estimate',
+    alertNeedSize: 'Please enter a trade size',
+    alertSaved: 'Prediction saved!',
+    alertPlaced: 'Trade placed! Remaining balance: $',
+    alertSettled: 'Trade settled:', profit: 'Profit', loss: 'Loss',
+    alertNeedQP: 'Please enter a question and market price',
+  },
+  zh: {
+    appSub: 'Polymarket 预测系统',
+    navOverview: '总览', navMarkets: '市场浏览', navJournal: '预测日志',
+    navPaper: '纸上交易', navAI: 'AI 分析', navResolved: '已结算',
+    phaseLearn: '学习',
+    loading: '加载中…',
+    refresh: '↻',
+    totalPreds: '预测总数', resolved: '已结算:', winRate: '预测胜率',
+    target55: '目标 ≥ 55%', paperBal: '纸上余额', initial: '初始:',
+    paperROI: '纸上收益率', trades: '笔交易', phaseProgress: '阶段进度',
+    dailyRoutine: '今日提醒',
+    routine: '☀️ 早上：浏览 10 个市场，记录你的概率判断<br>📊 下午：用 AI 分析有趣的市场<br>🌙 晚上：查看已结算市场，复盘判断准确性<br>📝 每周：统计胜率，评估是否进入下一阶段',
+    recentPreds: '最近预测',
+    noPreds: '还没有预测记录 — 去"市场浏览"开始记录',
+    chkPreds: '已结算预测数 ≥ 10', chkWin: '胜率 ≥ 55%',
+    chkTrades: '纸上交易 ≥ 20 笔', chkProfit: '纸上交易盈利',
+    colDate: '日期', colQuestion: '问题', colMarket: '市场价',
+    colMyEst: '我的判断', colResult: '结果', colEdge: '优势',
+    correct: '✓ 正确', wrong: '✗ 错误',
+    searchPH: '搜索市场…', byVolume: '按成交量', byLiquidity: '按流动性', byPrice: '按价格',
+    menuMsg: '选择操作：\n\n📓 记录预测 → 确定\n💸 纸上下单 → 取消',
+    totalPreds2: '预测总数', avgEdge: '平均优势',
+    calibTitle: '校准度分析 — 你的判断有多准',
+    predicted: '预测', actual: '实际',
+    predLog: '预测记录', browseMarkets: '+ 去市场记录预测',
+    noPreds2: '还没有预测 — 浏览市场并点击记录',
+    colSide: '方向', colPrice: '价格', colSize: '金额', colPnl: '盈亏',
+    balance: '余额', totalPnl: '总收益', tradesCount: '交易笔数', open: '未结算:',
+    readyPhase3: '🎉 恭喜！胜率和盈利达标，可以考虑进入第三阶段（小额真实交易）',
+    paperTip: '💡 纸上交易阶段：模拟 $1000 本金，单笔上限 $100（10%）。去市场浏览选择标的',
+    tradeLog: '交易记录', resetAccount: '重置账户', browseMarkets2: '+ 去市场下单',
+    resetConfirm: '重置纸上账户到$1000？',
+    noTrades: '还没有交易记录',
+    aiTip: '🤖 第四阶段功能：AI 分析市场概率，辅助判断。需要配置 ANTHROPIC_API_KEY。',
+    analyzeMarket: '手动分析市场', mktQuestion: '市场问题',
+    mktPriceLbl: '当前市场价格 (0-1)', relNews: '相关新闻',
+    analyzeBtn: '🤖 AI 分析', analyzing: '分析中…',
+    findOpps: 'AI 发现机会',
+    oppDesc: 'AI 扫描当前市场，找出可能被错误定价的机会',
+    scanBtn: '🔍 扫描机会', scanning: '扫描中…', noOpps: '未找到明显机会',
+    dailyReview: '每日复盘', genSummary: '📊 生成复盘报告', generating: '生成中…',
+    aiYesProb: 'AI预测YES概率', edgeVsMkt: 'vs市场优势', signal: '建议 (置信度',
+    keyFactors: '📌 关键因素:', risks: '⚠️ 风险:',
+    resolvedTip: '📚 第一阶段学习：分析已结算市场，看市场定价是否准确，找规律',
+    finalPrice: '结算前价格', outcome: '结果', endDate: '结束日期',
+    modalPredTitle: '📓 记录预测', mktQuestionLbl: '市场问题',
+    mktPricePct: '市场价格 (YES%)', myProbLbl: '我认为的概率 (0-1)',
+    myProbPH: '0.65', categoryLbl: '分类', categoryPH: '政治/体育/经济…',
+    reasoningLbl: '分析理由', reasoningPH: '为什么你认为这个概率更准确？',
+    cancel: '取消', savePred: '保存预测',
+    modalTradeTitle: '💸 纸上下单', sideLbl: '方向', entryPriceLbl: '买入价格',
+    amtLbl: '金额 (USDC)', myProbLbl2: '我认为的概率', reasonLbl: '理由',
+    reasonPH: '投资逻辑…', placeTrade: '确认下单',
+    alertNeedProb: '请输入你的概率判断',
+    alertNeedSize: '请输入金额',
+    alertSaved: '预测已保存！',
+    alertPlaced: '下单成功！余额剩余 $',
+    alertSettled: '交易结算:', profit: '盈利', loss: '亏损',
+    alertNeedQP: '请填写问题和价格',
+  }
+};
+
+function t(key) { return (T[lang] || T.en)[key] || key; }
+
+function toggleLang() {
+  lang = lang === 'en' ? 'zh' : 'en';
+  localStorage.setItem('lang', lang);
+  document.getElementById('lang-btn').textContent = lang === 'en' ? '中文' : 'EN';
+  document.getElementById('html-root').lang = lang === 'en' ? 'en' : 'zh';
+  applyStaticLang();
+  loadPage();
+}
+
+function applyStaticLang() {
+  // Sidebar nav labels
+  const nav = document.querySelectorAll('.nav-item');
+  const navKeys = ['navOverview','navMarkets','navJournal','navPaper','navAI','navResolved'];
+  const navIcons = ['🏠','📈','📓','💸','🤖','✅'];
+  const phaseTags = ['','p1','p1','p2','p4','p1'];
+  const phaseLabels = ['','Phase 1 / 阶段1','Phase 1 / 阶段1','Phase 2 / 阶段2','Phase 4 / 阶段4', t('phaseLearn')];
+  nav.forEach((btn, i) => {
+    btn.childNodes[1].textContent = ' ' + t(navKeys[i]);
+  });
+  document.querySelector('.logo p').textContent = t('appSub');
+  // Modal static text
+  document.querySelector('#predict-modal .modal-title').textContent = t('modalPredTitle');
+  document.querySelector('label[for-key="mktQuestionLbl"]') && null;
+  // Re-render modal labels
+  renderModalLabels();
+}
+
+function renderModalLabels() {
+  // Predict modal
+  const pm = document.getElementById('predict-modal');
+  pm.querySelectorAll('label')[0].textContent = t('mktQuestionLbl');
+  pm.querySelectorAll('label')[1].textContent = t('mktPricePct');
+  pm.querySelectorAll('label')[2].textContent = t('myProbLbl');
+  pm.querySelectorAll('label')[3].textContent = t('categoryLbl');
+  pm.querySelectorAll('label')[4].textContent = t('reasoningLbl');
+  document.getElementById('pm-category').placeholder = t('categoryPH');
+  document.getElementById('pm-reasoning').placeholder = t('reasoningPH');
+  pm.querySelector('.btn-outline').textContent = t('cancel');
+  pm.querySelector('.btn-primary').textContent = t('savePred');
+  document.querySelector('#predict-modal .modal-title').textContent = t('modalPredTitle');
+  // Trade modal
+  const tm = document.getElementById('trade-modal');
+  tm.querySelectorAll('label')[0].textContent = t('mktQuestionLbl');
+  tm.querySelectorAll('label')[1].textContent = t('sideLbl');
+  tm.querySelectorAll('label')[2].textContent = t('entryPriceLbl');
+  tm.querySelectorAll('label')[3].textContent = t('amtLbl');
+  tm.querySelectorAll('label')[4].textContent = t('myProbLbl2');
+  tm.querySelectorAll('label')[5].textContent = t('reasonLbl');
+  document.getElementById('tm-reason').placeholder = t('reasonPH');
+  tm.querySelector('.btn-outline').textContent = t('cancel');
+  tm.querySelector('.btn-success').textContent = t('placeTrade');
+  document.querySelector('#trade-modal .modal-title').textContent = t('modalTradeTitle');
+}
+
 let currentPage = 'overview';
 
 function showPage(page) {
   currentPage = page;
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
   event.currentTarget.classList.add('active');
-  const titles = {overview:'总览',markets:'市场浏览',journal:'预测日志',paper:'纸上交易',ai:'AI分析',resolved:'已结算市场'};
-  document.getElementById('page-title').textContent = titles[page] || page;
+  const titleKeys = {overview:'navOverview',markets:'navMarkets',journal:'navJournal',paper:'navPaper',ai:'navAI',resolved:'navResolved'};
+  document.getElementById('page-title').textContent = t(titleKeys[page]) || page;
   loadPage();
 }
 
 async function loadPage() {
   const el = document.getElementById('content');
-  el.innerHTML = '<div style="color:var(--muted);padding:40px;text-align:center">加载中…</div>';
+  el.innerHTML = `<div style="color:var(--muted);padding:40px;text-align:center">${t('loading')}</div>`;
   switch(currentPage) {
     case 'overview':  await renderOverview(); break;
     case 'markets':   await renderMarkets(); break;
@@ -288,46 +478,41 @@ async function renderOverview() {
   el.innerHTML = `
     <div class="grid grid-4" style="margin-bottom:16px">
       <div class="card">
-        <h3>预测总数</h3>
+        <h3>${t('totalPreds')}</h3>
         <div class="stat-val">${ps.total}</div>
-        <div class="stat-sub">已结算 ${ps.resolved}</div>
+        <div class="stat-sub">${t('resolved')} ${ps.resolved}</div>
       </div>
       <div class="card">
-        <h3>预测胜率</h3>
+        <h3>${t('winRate')}</h3>
         <div class="stat-val ${ps.win_rate>=.55?'pos':ps.win_rate?'neg':'neu'}">${ps.win_rate!=null?Math.round(ps.win_rate*100)+'%':'—'}</div>
-        <div class="stat-sub">目标 ≥ 55%</div>
+        <div class="stat-sub">${t('target55')}</div>
         ${ps.win_rate!=null?`<div class="progress"><div class="progress-fill" style="width:${Math.min(100,ps.win_rate*100*1.6)}%;background:${ps.win_rate>=.55?'var(--green)':'var(--red)'}"></div></div>`:''}
       </div>
       <div class="card">
-        <h3>纸上余额</h3>
+        <h3>${t('paperBal')}</h3>
         <div class="stat-val ${pts.total_pnl>=0?'pos':'neg'}">$${pts.balance?.toFixed(2)||'1000.00'}</div>
-        <div class="stat-sub">初始 $${pts.initial||1000}</div>
+        <div class="stat-sub">${t('initial')} $${pts.initial||1000}</div>
       </div>
       <div class="card">
-        <h3>纸上收益率</h3>
+        <h3>${t('paperROI')}</h3>
         <div class="stat-val ${pts.roi>=0?'pos':'neg'}">${pts.roi!=null?((pts.roi*100).toFixed(2))+'%':'—'}</div>
-        <div class="stat-sub">纸上交易 ${pts.total_trades} 笔</div>
+        <div class="stat-sub">${pts.total_trades} ${t('trades')}</div>
       </div>
     </div>
 
     <div class="grid grid-2" style="margin-bottom:16px">
       <div class="card">
-        <h3>阶段进度</h3>
+        <h3>${t('phaseProgress')}</h3>
         ${phaseCard(ps,pts)}
       </div>
       <div class="card">
-        <h3>今日提醒</h3>
-        <div style="font-size:13px;line-height:2;color:var(--muted)">
-          ☀️ 早上：浏览 10 个市场，记录你的概率判断<br>
-          📊 下午：用 AI 分析有趣的市场<br>
-          🌙 晚上：查看已结算市场，复盘判断准确性<br>
-          📝 每周：统计胜率，评估是否进入下一阶段
-        </div>
+        <h3>${t('dailyRoutine')}</h3>
+        <div style="font-size:13px;line-height:2;color:var(--muted)">${t('routine')}</div>
       </div>
     </div>
 
     <div class="card">
-      <h3>最近预测</h3>
+      <h3>${t('recentPreds')}</h3>
       ${await recentPredictionsTable()}
     </div>
   `;
@@ -335,10 +520,10 @@ async function renderOverview() {
 
 function phaseCard(ps, pts) {
   const checks = [
-    {label:'预测数 ≥ 10', done: ps.resolved>=10},
-    {label:'胜率 ≥ 55%', done: ps.win_rate>=.55},
-    {label:'纸上交易 ≥ 20 笔', done: pts.resolved>=20},
-    {label:'纸上盈利', done: pts.total_pnl>0},
+    {label:t('chkPreds'), done: ps.resolved>=10},
+    {label:t('chkWin'), done: ps.win_rate>=.55},
+    {label:t('chkTrades'), done: pts.resolved>=20},
+    {label:t('chkProfit'), done: pts.total_pnl>0},
   ];
   return checks.map(c=>
     `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:13px">
@@ -351,14 +536,14 @@ function phaseCard(ps, pts) {
 async function recentPredictionsTable() {
   const d = await api('/predictions');
   const preds = d.predictions.slice(-5).reverse();
-  if (!preds.length) return '<div style="color:var(--muted);padding:20px 0;text-align:center">还没有预测记录 — 去"预测日志"开始记录</div>';
-  return `<table><thead><tr><th>日期</th><th>问题</th><th>市场价</th><th>我的判断</th><th>结果</th></tr></thead><tbody>
+  if (!preds.length) return `<div style="color:var(--muted);padding:20px 0;text-align:center">${t('noPreds')}</div>`;
+  return `<table><thead><tr><th>${t('colDate')}</th><th>${t('colQuestion')}</th><th>${t('colMarket')}</th><th>${t('colMyEst')}</th><th>${t('colResult')}</th></tr></thead><tbody>
     ${preds.map(p=>`<tr>
       <td style="color:var(--muted)">${p.date}</td>
       <td>${p.question.substring(0,50)}…</td>
       <td>${(p.market_price*100).toFixed(1)}%</td>
-      <td>${(p.my_probability*100).toFixed(1)}% <span style="color:${p.edge>0?'var(--green)':'var(--red)';font-size:11px}">(${p.edge>0?'+':''}${(p.edge*100).toFixed(1)}%)</span></td>
-      <td>${p.resolved?`<span class="badge badge-${p.correct?'yes':'no'}">${p.correct?'✓ 正确':'✗ 错误'}</span>`:resolveBtn(p.id,'pred')}</td>
+      <td>${(p.my_probability*100).toFixed(1)}% <span style="color:${p.edge>0?'var(--green)':'var(--red)'};font-size:11px">(${p.edge>0?'+':''}${(p.edge*100).toFixed(1)}%)</span></td>
+      <td>${p.resolved?`<span class="badge badge-${p.correct?'yes':'no'}">${p.correct?t('correct'):t('wrong')}</span>`:resolveBtn(p.id,'pred')}</td>
     </tr>`).join('')}
   </tbody></table>`;
 }
@@ -370,11 +555,11 @@ async function renderMarkets() {
   const el = document.getElementById('content');
   el.innerHTML = `
     <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-      <input id="mkt-search" placeholder="搜索市场…" style="flex:1;max-width:300px" oninput="filterMarkets()">
+      <input id="mkt-search" placeholder="${t('searchPH')}" style="flex:1;max-width:300px" oninput="filterMarkets()">
       <select id="mkt-sort" onchange="sortMarkets()" style="width:150px">
-        <option value="volume">按成交量</option>
-        <option value="liquidity">按流动性</option>
-        <option value="price">按价格</option>
+        <option value="volume">${t('byVolume')}</option>
+        <option value="liquidity">${t('byLiquidity')}</option>
+        <option value="yes_price">${t('byPrice')}</option>
       </select>
     </div>
     <div id="markets-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px"></div>
@@ -414,8 +599,10 @@ function sortMarkets() {
 }
 
 function openMarketMenu(slug, question, price) {
-  if (confirm(`选择操作：\n\n📓 记录预测 → 确定\n💸 纸上下单 → 取消然后右键`)) {
+  if (confirm(t('menuMsg'))) {
     openPredictModal(slug, question, price);
+  } else {
+    openTradeModal(slug, question, price);
   }
 }
 
@@ -426,20 +613,20 @@ async function renderJournal() {
   const el = document.getElementById('content');
   el.innerHTML = `
     <div class="grid grid-3" style="margin-bottom:16px">
-      <div class="card"><h3>总预测</h3><div class="stat-val">${stats.total}</div></div>
-      <div class="card"><h3>胜率</h3><div class="stat-val ${stats.win_rate>=.55?'pos':stats.win_rate?'neg':'neu'}">${stats.win_rate!=null?Math.round(stats.win_rate*100)+'%':'—'}</div></div>
-      <div class="card"><h3>平均优势</h3><div class="stat-val ${stats.avg_edge>=0?'pos':'neg'}">${stats.avg_edge!=null?(stats.avg_edge*100).toFixed(1)+'%':'—'}</div></div>
+      <div class="card"><h3>${t('totalPreds2')}</h3><div class="stat-val">${stats.total}</div></div>
+      <div class="card"><h3>${t('winRate')}</h3><div class="stat-val ${stats.win_rate>=.55?'pos':stats.win_rate?'neg':'neu'}">${stats.win_rate!=null?Math.round(stats.win_rate*100)+'%':'—'}</div></div>
+      <div class="card"><h3>${t('avgEdge')}</h3><div class="stat-val ${stats.avg_edge>=0?'pos':'neg'}">${stats.avg_edge!=null?(stats.avg_edge*100).toFixed(1)+'%':'—'}</div></div>
     </div>
 
     ${stats.calibration?.length?`
     <div class="card" style="margin-bottom:16px">
-      <h3>校准度分析 — 你的判断有多准</h3>
+      <h3>${t('calibTitle')}</h3>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
         ${stats.calibration.map(c=>`
           <div style="text-align:center;padding:10px;background:var(--surface2);border-radius:8px;min-width:80px">
-            <div style="font-size:11px;color:var(--muted)">预测 ${(c.predicted_prob*100).toFixed(0)}%</div>
+            <div style="font-size:11px;color:var(--muted)">${t('predicted')} ${(c.predicted_prob*100).toFixed(0)}%</div>
             <div style="font-size:16px;font-weight:700;color:${Math.abs(c.actual_rate-c.predicted_prob)<.1?'var(--green)':'var(--yellow)'}">${(c.actual_rate*100).toFixed(0)}%</div>
-            <div style="font-size:10px;color:var(--muted)">实际 (n=${c.count})</div>
+            <div style="font-size:10px;color:var(--muted)">${t('actual')} (n=${c.count})</div>
           </div>
         `).join('')}
       </div>
@@ -447,10 +634,10 @@ async function renderJournal() {
 
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div class="section-title" style="margin:0">预测记录</div>
-        <button class="btn btn-primary btn-sm" onclick="showPage('markets')">+ 去市场记录预测</button>
+        <div class="section-title" style="margin:0">${t('predLog')}</div>
+        <button class="btn btn-primary btn-sm" onclick="showPage('markets')">${t('browseMarkets')}</button>
       </div>
-      <table><thead><tr><th>日期</th><th>问题</th><th>市场价</th><th>我的判断</th><th>优势</th><th>结果</th></tr></thead>
+      <table><thead><tr><th>${t('colDate')}</th><th>${t('colQuestion')}</th><th>${t('colMarket')}</th><th>${t('colMyEst')}</th><th>${t('colEdge')}</th><th>${t('colResult')}</th></tr></thead>
       <tbody>
         ${preds.length?preds.map(p=>`<tr>
           <td style="color:var(--muted);white-space:nowrap">${p.date}</td>
@@ -465,7 +652,7 @@ async function renderJournal() {
                <button class="btn btn-danger btn-sm" onclick="resolvePred('${p.id}','NO')">NO</button>
              </div>`
           }</td>
-        </tr>`).join(''):'<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:30px">还没有预测 — 浏览市场并点击记录</td></tr>'}
+        </tr>`).join(''):`<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:30px">${t('noPreds2')}</td></tr>`}
       </tbody></table>
     </div>
   `;
@@ -478,40 +665,40 @@ async function renderPaper() {
   const el = document.getElementById('content');
   el.innerHTML = `
     <div class="grid grid-4" style="margin-bottom:16px">
-      <div class="card"><h3>余额</h3><div class="stat-val pos">$${stats.balance?.toFixed(2)||'1000.00'}</div></div>
-      <div class="card"><h3>总收益</h3><div class="stat-val ${stats.total_pnl>=0?'pos':'neg'}">${stats.total_pnl!=null?(stats.total_pnl>=0?'+':'')+'$'+stats.total_pnl?.toFixed(2):'—'}</div></div>
-      <div class="card"><h3>胜率</h3><div class="stat-val ${stats.win_rate>=.55?'pos':stats.win_rate?'neg':'neu'}">${stats.win_rate!=null?Math.round(stats.win_rate*100)+'%':'—'}</div></div>
-      <div class="card"><h3>交易笔数</h3><div class="stat-val">${stats.total_trades}</div><div class="stat-sub">未结算 ${stats.open_trades||0}</div></div>
+      <div class="card"><h3>${t('balance')}</h3><div class="stat-val pos">$${stats.balance?.toFixed(2)||'1000.00'}</div></div>
+      <div class="card"><h3>${t('totalPnl')}</h3><div class="stat-val ${stats.total_pnl>=0?'pos':'neg'}">${stats.total_pnl!=null?(stats.total_pnl>=0?'+':'')+'$'+stats.total_pnl?.toFixed(2):'—'}</div></div>
+      <div class="card"><h3>${t('winRate')}</h3><div class="stat-val ${stats.win_rate>=.55?'pos':stats.win_rate?'neg':'neu'}">${stats.win_rate!=null?Math.round(stats.win_rate*100)+'%':'—'}</div></div>
+      <div class="card"><h3>${t('tradesCount')}</h3><div class="stat-val">${stats.total_trades}</div><div class="stat-sub">${t('open')} ${stats.open_trades||0}</div></div>
     </div>
 
-    ${stats.ready_for_phase3?'<div class="alert alert-success">🎉 恭喜！胜率和盈利达标，可以考虑进入第三阶段（小额真实交易）</div>':''}
-    ${stats.total_trades<5?'<div class="alert alert-info">💡 纸上交易阶段：模拟 $1000 本金，单笔上限 $100（10%）。去市场浏览选择标的</div>':''}
+    ${stats.ready_for_phase3?`<div class="alert alert-success">${t('readyPhase3')}</div>`:''}
+    ${stats.total_trades<5?`<div class="alert alert-info">${t('paperTip')}</div>`:''}
 
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div class="section-title" style="margin:0">交易记录</div>
+        <div class="section-title" style="margin:0">${t('tradeLog')}</div>
         <div style="display:flex;gap:8px">
-          <button class="btn btn-outline btn-sm" onclick="if(confirm('重置纸上账户到$1000？'))resetPaper()">重置账户</button>
-          <button class="btn btn-primary btn-sm" onclick="showPage('markets')">+ 去市场下单</button>
+          <button class="btn btn-outline btn-sm" onclick="if(confirm(t('resetConfirm')))resetPaper()">${t('resetAccount')}</button>
+          <button class="btn btn-primary btn-sm" onclick="showPage('markets')">${t('browseMarkets2')}</button>
         </div>
       </div>
-      <table><thead><tr><th>日期</th><th>问题</th><th>方向</th><th>价格</th><th>金额</th><th>盈亏</th><th>结果</th></tr></thead>
+      <table><thead><tr><th>${t('colDate')}</th><th>${t('colQuestion')}</th><th>${t('colSide')}</th><th>${t('colPrice')}</th><th>${t('colSize')}</th><th>${t('colPnl')}</th><th>${t('colResult')}</th></tr></thead>
       <tbody>
-        ${trades.length?trades.map(t=>`<tr>
-          <td style="color:var(--muted);white-space:nowrap">${t.date}</td>
-          <td>${t.question.substring(0,40)}…</td>
-          <td><span class="badge badge-${t.side=='YES'?'yes':'no'}">${t.side}</span></td>
-          <td>${(t.price*100).toFixed(1)}%</td>
-          <td>$${t.size_usd.toFixed(0)}</td>
-          <td>${t.pnl!=null?`<span class="${t.pnl>=0?'pos':'neg'}">${t.pnl>=0?'+':''}$${t.pnl.toFixed(2)}</span>`:'—'}</td>
-          <td>${t.resolved
-            ?`<span class="badge badge-${t.outcome=='YES'?'yes':'no'}">${t.outcome}</span>`
+        ${trades.length?trades.map(tr=>`<tr>
+          <td style="color:var(--muted);white-space:nowrap">${tr.date}</td>
+          <td>${tr.question.substring(0,40)}…</td>
+          <td><span class="badge badge-${tr.side=='YES'?'yes':'no'}">${tr.side}</span></td>
+          <td>${(tr.price*100).toFixed(1)}%</td>
+          <td>$${tr.size_usd.toFixed(0)}</td>
+          <td>${tr.pnl!=null?`<span class="${tr.pnl>=0?'pos':'neg'}">${tr.pnl>=0?'+':''}$${tr.pnl.toFixed(2)}</span>`:'—'}</td>
+          <td>${tr.resolved
+            ?`<span class="badge badge-${tr.outcome=='YES'?'yes':'no'}">${tr.outcome}</span>`
             :`<div style="display:flex;gap:4px">
-               <button class="btn btn-success btn-sm" onclick="resolveTrade('${t.id}','YES')">YES</button>
-               <button class="btn btn-danger btn-sm" onclick="resolveTrade('${t.id}','NO')">NO</button>
+               <button class="btn btn-success btn-sm" onclick="resolveTrade('${tr.id}','YES')">YES</button>
+               <button class="btn btn-danger btn-sm" onclick="resolveTrade('${tr.id}','NO')">NO</button>
              </div>`
           }</td>
-        </tr>`).join(''):'<tr><td colspan="7" style="color:var(--muted);text-align:center;padding:30px">还没有交易记录</td></tr>'}
+        </tr>`).join(''):`<tr><td colspan="7" style="color:var(--muted);text-align:center;padding:30px">${t('noTrades')}</td></tr>`}
       </tbody></table>
     </div>
   `;
@@ -521,37 +708,35 @@ async function renderPaper() {
 async function renderAI() {
   const el = document.getElementById('content');
   el.innerHTML = `
-    <div class="alert alert-info" style="margin-bottom:16px">
-      🤖 第四阶段功能：AI 分析市场概率，辅助判断。需要配置 ANTHROPIC_API_KEY。
-    </div>
+    <div class="alert alert-info" style="margin-bottom:16px">${t('aiTip')}</div>
     <div class="grid grid-2" style="margin-bottom:16px">
       <div class="card">
-        <h3>手动分析市场</h3>
+        <h3>${t('analyzeMarket')}</h3>
         <div class="form-group" style="margin-top:8px">
-          <label>市场问题</label>
+          <label>${t('mktQuestion')}</label>
           <textarea id="manual-q" rows="2" placeholder="Will X happen by date?"></textarea>
         </div>
         <div class="form-group">
-          <label>当前市场价格 (0-1)</label>
+          <label>${t('mktPriceLbl')}</label>
           <input type="number" id="manual-price" step="0.01" min="0" max="1" placeholder="0.45">
         </div>
         <div class="form-group">
-          <label>相关新闻</label>
-          <textarea id="manual-news" rows="3" placeholder="粘贴新闻摘要…"></textarea>
+          <label>${t('relNews')}</label>
+          <textarea id="manual-news" rows="3" placeholder="Paste news summary…"></textarea>
         </div>
-        <button class="btn btn-primary" onclick="runManualAnalysis()">🤖 AI 分析</button>
+        <button class="btn btn-primary" onclick="runManualAnalysis()">${t('analyzeBtn')}</button>
         <div id="manual-result" style="margin-top:12px"></div>
       </div>
       <div class="card">
-        <h3>AI 发现机会</h3>
-        <p style="color:var(--muted);font-size:12px;margin-bottom:12px">AI 扫描当前市场，找出可能被错误定价的机会</p>
-        <button class="btn btn-primary" onclick="findOpportunities()">🔍 扫描机会</button>
+        <h3>${t('findOpps')}</h3>
+        <p style="color:var(--muted);font-size:12px;margin-bottom:12px">${t('oppDesc')}</p>
+        <button class="btn btn-primary" onclick="findOpportunities()">${t('scanBtn')}</button>
         <div id="opp-result" style="margin-top:12px"></div>
       </div>
     </div>
     <div class="card">
-      <h3>每日复盘</h3>
-      <button class="btn btn-outline" onclick="getDailySummary()">📊 生成复盘报告</button>
+      <h3>${t('dailyReview')}</h3>
+      <button class="btn btn-outline" onclick="getDailySummary()">${t('genSummary')}</button>
       <div id="daily-result" style="margin-top:12px;font-size:13px;line-height:1.8;white-space:pre-wrap;color:var(--text)"></div>
     </div>
   `;
@@ -561,18 +746,18 @@ async function runManualAnalysis() {
   const q = document.getElementById('manual-q').value;
   const price = parseFloat(document.getElementById('manual-price').value);
   const news = document.getElementById('manual-news').value;
-  if (!q || !price) return alert('请填写问题和价格');
+  if (!q || !price) return alert(t('alertNeedQP'));
 
-  document.getElementById('manual-result').innerHTML = '<div style="color:var(--muted)">分析中…</div>';
+  document.getElementById('manual-result').innerHTML = `<div style="color:var(--muted)">${t('analyzing')}</div>`;
   const r = await api('/ai/analyse','POST',{question:q,market_price:price,news});
   renderAnalysisResult('manual-result', r);
 }
 
 async function findOpportunities() {
-  document.getElementById('opp-result').innerHTML = '<div style="color:var(--muted)">扫描中…</div>';
+  document.getElementById('opp-result').innerHTML = `<div style="color:var(--muted)">${t('scanning')}</div>`;
   const r = await api('/ai/opportunities');
   const el = document.getElementById('opp-result');
-  if (!r.opportunities?.length) { el.innerHTML = '<div style="color:var(--muted)">未找到明显机会</div>'; return; }
+  if (!r.opportunities?.length) { el.innerHTML = `<div style="color:var(--muted)">${t('noOpps')}</div>`; return; }
   el.innerHTML = r.opportunities.map(o=>`
     <div style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:8px">
       <div style="font-weight:600;margin-bottom:4px">${o.slug}</div>
@@ -583,7 +768,7 @@ async function findOpportunities() {
 }
 
 async function getDailySummary() {
-  document.getElementById('daily-result').textContent = '生成中…';
+  document.getElementById('daily-result').textContent = t('generating');
   const r = await api('/ai/daily-summary');
   document.getElementById('daily-result').textContent = r.summary;
 }
@@ -596,20 +781,20 @@ function renderAnalysisResult(elId, r) {
       <div style="display:flex;gap:16px;margin-bottom:10px">
         <div style="text-align:center">
           <div style="font-size:24px;font-weight:700;color:var(--blue)">${((r.yes_probability||0)*100).toFixed(1)}%</div>
-          <div style="font-size:10px;color:var(--muted)">AI预测YES概率</div>
+          <div style="font-size:10px;color:var(--muted)">${t('aiYesProb')}</div>
         </div>
         <div style="text-align:center">
           <div style="font-size:24px;font-weight:700;color:${(r.edge||0)>=0?'var(--green)':'var(--red)'}">${(r.edge||0)>=0?'+':''}${((r.edge||0)*100).toFixed(1)}%</div>
-          <div style="font-size:10px;color:var(--muted)">vs市场优势</div>
+          <div style="font-size:10px;color:var(--muted)">${t('edgeVsMkt')}</div>
         </div>
         <div style="text-align:center">
           <div style="font-size:20px;font-weight:700;color:${recColor}">${r.recommendation}</div>
-          <div style="font-size:10px;color:var(--muted)">建议 (置信度 ${((r.confidence||0)*100).toFixed(0)}%)</div>
+          <div style="font-size:10px;color:var(--muted)">${t('signal')} ${((r.confidence||0)*100).toFixed(0)}%)</div>
         </div>
       </div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:6px">${r.reasoning||''}</div>
-      ${r.key_factors?.length?`<div style="font-size:11px;color:var(--text)">📌 关键因素: ${r.key_factors.join(' · ')}</div>`:''}
-      ${r.risks?.length?`<div style="font-size:11px;color:var(--red);margin-top:4px">⚠️ 风险: ${r.risks.join(' · ')}</div>`:''}
+      ${r.key_factors?.length?`<div style="font-size:11px;color:var(--text)">${t('keyFactors')} ${r.key_factors.join(' · ')}</div>`:''}
+      ${r.risks?.length?`<div style="font-size:11px;color:var(--red);margin-top:4px">${t('risks')} ${r.risks.join(' · ')}</div>`:''}
     </div>`;
 }
 
@@ -619,11 +804,9 @@ async function renderResolved() {
   const markets = d.markets;
   const el = document.getElementById('content');
   el.innerHTML = `
-    <div class="alert alert-info" style="margin-bottom:16px">
-      📚 第一阶段学习：分析已结算市场，看市场定价是否准确，找规律
-    </div>
+    <div class="alert alert-info" style="margin-bottom:16px">${t('resolvedTip')}</div>
     <div class="card">
-      <table><thead><tr><th>问题</th><th>结算前价格</th><th>结果</th><th>结束日期</th></tr></thead>
+      <table><thead><tr><th>${t('colQuestion')}</th><th>${t('finalPrice')}</th><th>${t('outcome')}</th><th>${t('endDate')}</th></tr></thead>
       <tbody>
         ${markets.map(m=>`<tr>
           <td>${m.question.substring(0,60)}…</td>
@@ -668,10 +851,10 @@ async function submitPrediction() {
     reasoning: document.getElementById('pm-reasoning').value,
     category: document.getElementById('pm-category').value,
   };
-  if (!body.my_probability) return alert('请输入你的概率判断');
+  if (!body.my_probability) return alert(t('alertNeedProb'));
   await api('/predictions','POST',body);
   closeModal('predict-modal');
-  alert('预测已保存！');
+  alert(t('alertSaved'));
 }
 
 async function submitTrade() {
@@ -684,11 +867,11 @@ async function submitTrade() {
     my_probability: parseFloat(document.getElementById('tm-prob').value)||0.5,
     reasoning: document.getElementById('tm-reason').value,
   };
-  if (!body.size_usd) return alert('请输入金额');
+  if (!body.size_usd) return alert(t('alertNeedSize'));
   const r = await api('/paper/trade','POST',body);
-  if (r.error) return alert('错误: ' + r.error);
+  if (r.error) return alert('Error: ' + r.error);
   closeModal('trade-modal');
-  alert('下单成功！余额剩余 $' + (await api('/paper/stats')).balance?.toFixed(2));
+  alert(t('alertPlaced') + (await api('/paper/stats')).balance?.toFixed(2));
 }
 
 async function resolvePred(id, outcome) {
@@ -698,7 +881,7 @@ async function resolvePred(id, outcome) {
 
 async function resolveTrade(id, outcome) {
   const r = await api(`/paper/trades/${id}/resolve`,'POST',{outcome});
-  if (r.pnl != null) alert(`交易结算: ${r.pnl>=0?'盈利':'亏损'} $${Math.abs(r.pnl).toFixed(2)}`);
+  if (r.pnl != null) alert(`${t('alertSettled')} ${r.pnl>=0?t('profit'):t('loss')} $${Math.abs(r.pnl).toFixed(2)}`);
   loadPage();
 }
 
@@ -711,17 +894,9 @@ async function resetPaper() {
 function fmtK(v) { return v>=1e6?(v/1e6).toFixed(1)+'M':v>=1000?(v/1000).toFixed(0)+'K':v?.toFixed(0)||'0'; }
 function resolveBtn(id, type) { return '—'; }
 
-// Market right-click for trade
-document.addEventListener('contextmenu', e => {
-  const card = e.target.closest('.market-card');
-  if (card) {
-    e.preventDefault();
-    const slug = card.getAttribute('data-slug');
-    // handled by onclick
-  }
-});
-
 // init
+document.getElementById('lang-btn').textContent = lang === 'en' ? '中文' : 'EN';
+applyStaticLang();
 loadPage();
 </script>
 </body>

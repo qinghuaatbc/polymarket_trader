@@ -1,7 +1,7 @@
 """
-预测日志 + 纸上交易跟踪系统
-Phase 1: 每日预测记录
-Phase 2: 纸上交易 $1000 虚拟资金
+Prediction journal + paper trading tracker
+Phase 1: Daily prediction logging
+Phase 2: Paper trading with $1000 virtual funds
 """
 from __future__ import annotations
 import json
@@ -35,14 +35,14 @@ def _save_settings(s: dict):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  Phase 1: 预测日志
+#  Phase 1: Prediction journal
 # ─────────────────────────────────────────────────────────────────────────────
 
 def add_prediction(
     market_slug: str,
     question: str,
-    market_price: float,     # 市场当前价格 0-1
-    my_probability: float,   # 我认为的真实概率 0-1
+    market_price: float,     # current market price 0-1
+    my_probability: float,   # my estimated true probability 0-1
     reasoning: str = "",
     category: str = "",
 ) -> dict:
@@ -54,12 +54,12 @@ def add_prediction(
         "question": question,
         "market_price": market_price,
         "my_probability": my_probability,
-        "edge": round(my_probability - market_price, 4),  # 正=我认为被低估
+        "edge": round(my_probability - market_price, 4),  # positive = I think it's underpriced
         "reasoning": reasoning,
         "category": category,
-        "outcome": None,    # 结算后填写: "YES" | "NO"
+        "outcome": None,    # filled after resolution: "YES" | "NO"
         "resolved": False,
-        "correct": None,    # 结算后: True/False
+        "correct": None,    # after resolution: True/False
         "created_at": datetime.datetime.now().isoformat(),
     }
     predictions.append(entry)
@@ -68,13 +68,13 @@ def add_prediction(
 
 
 def resolve_prediction(pred_id: str, outcome: str) -> dict:
-    """记录市场结果，计算预测准确率"""
+    """Record market outcome and calculate prediction accuracy."""
     predictions = _load(PREDICTIONS_FILE)
     for p in predictions:
         if p["id"] == pred_id:
             p["outcome"] = outcome.upper()
             p["resolved"] = True
-            # 如果我认为YES概率>0.5且结果是YES，或YES<0.5且结果是NO，则判断正确
+            # Correct if: predicted YES prob > 0.5 and outcome is YES, or vice versa
             if outcome.upper() == "YES":
                 p["correct"] = p["my_probability"] > 0.5
             else:
@@ -103,10 +103,9 @@ def prediction_stats() -> dict:
     correct = [p for p in resolved if p["correct"]]
     win_rate = len(correct) / len(resolved)
 
-    # 校准度：我的概率预测准确性
     avg_edge = sum(p["edge"] for p in preds) / len(preds) if preds else 0
 
-    # 按概率分组统计校准度
+    # Calibration: group by predicted probability bucket
     buckets = {}
     for p in resolved:
         bucket = round(p["my_probability"] * 10) / 10  # 0.1 steps
@@ -135,23 +134,23 @@ def prediction_stats() -> dict:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  Phase 2: 纸上交易
+#  Phase 2: Paper trading
 # ─────────────────────────────────────────────────────────────────────────────
 
 def paper_trade(
     market_slug: str,
     question: str,
     side: str,              # "YES" | "NO"
-    price: float,           # 买入价格
-    size_usd: float,        # 投入金额
+    price: float,           # entry price
+    size_usd: float,        # position size in USD
     my_probability: float,
     reasoning: str = "",
 ) -> dict:
     settings = _load_settings()
     if size_usd > settings["paper_balance"]:
-        return {"error": f"余额不足: ${settings['paper_balance']:.2f}"}
+        return {"error": f"Insufficient balance: ${settings['paper_balance']:.2f}"}
     if size_usd > settings["paper_balance"] * 0.1:
-        return {"error": f"单笔上限10%: ${settings['paper_balance']*0.1:.2f}"}
+        return {"error": f"Max 10% per trade: ${settings['paper_balance']*0.1:.2f}"}
 
     trades = _load(PAPER_TRADES_FILE)
     shares = size_usd / price
@@ -190,7 +189,7 @@ def resolve_paper_trade(trade_id: str, outcome: str) -> dict:
 
             won = (t["side"] == outcome.upper())
             if won:
-                # 赢：每股收回 $1，减去买入成本
+                # Win: each share pays $1, minus entry cost
                 proceeds = t["shares"] * 1.0
                 t["pnl"] = round(proceeds - t["size_usd"], 4)
             else:
@@ -229,7 +228,7 @@ def paper_trade_stats() -> dict:
             "ready_for_phase3": False,
         }
 
-    wins    = [t for t in resolved if t["pnl"] and t["pnl"] > 0]
+    wins      = [t for t in resolved if t["pnl"] and t["pnl"] > 0]
     total_pnl = sum(t["pnl"] for t in resolved if t["pnl"] is not None)
     win_rate  = len(wins) / len(resolved)
     roi = total_pnl / settings["initial_balance"]
