@@ -107,31 +107,31 @@ textarea{resize:vertical;min-height:70px}
 <aside class="sidebar">
   <div class="logo">
     <h1>📊 PM Trader</h1>
-    <p>Polymarket Prediction System</p>
+    <p data-i18n="appSub">Polymarket Prediction System</p>
   </div>
   <nav class="nav">
     <button class="nav-item active" onclick="showPage('overview')">
-      <span class="nav-icon">🏠</span> Overview
+      <span class="nav-icon">🏠</span><span data-i18n="navOverview">Overview</span>
     </button>
     <button class="nav-item" onclick="showPage('markets')">
-      <span class="nav-icon">📈</span> Markets
-      <span class="phase-badge p1">Phase 1</span>
+      <span class="nav-icon">📈</span><span data-i18n="navMarkets">Markets</span>
+      <span class="phase-badge p1" data-i18n="phase1">Phase 1</span>
     </button>
     <button class="nav-item" onclick="showPage('journal')">
-      <span class="nav-icon">📓</span> Journal
-      <span class="phase-badge p1">Phase 1</span>
+      <span class="nav-icon">📓</span><span data-i18n="navJournal">Journal</span>
+      <span class="phase-badge p1" data-i18n="phase1">Phase 1</span>
     </button>
     <button class="nav-item" onclick="showPage('paper')">
-      <span class="nav-icon">💸</span> Paper Trading
-      <span class="phase-badge p2">Phase 2</span>
+      <span class="nav-icon">💸</span><span data-i18n="navPaper">Paper Trading</span>
+      <span class="phase-badge p2" data-i18n="phase2">Phase 2</span>
     </button>
     <button class="nav-item" onclick="showPage('ai')">
-      <span class="nav-icon">🤖</span> AI Analysis
-      <span class="phase-badge p4">Phase 4</span>
+      <span class="nav-icon">🤖</span><span data-i18n="navAI">AI Analysis</span>
+      <span class="phase-badge p4" data-i18n="phase4">Phase 4</span>
     </button>
     <button class="nav-item" onclick="showPage('resolved')">
-      <span class="nav-icon">✅</span> Resolved
-      <span class="phase-badge p1">Learn</span>
+      <span class="nav-icon">✅</span><span data-i18n="navResolved">Resolved</span>
+      <span class="phase-badge p1" data-i18n="phaseLearn">Learn</span>
     </button>
   </nav>
 </aside>
@@ -152,33 +152,33 @@ textarea{resize:vertical;min-height:70px}
 <!-- Predict Modal -->
 <div class="modal" id="predict-modal">
   <div class="modal-box">
-    <div class="modal-title">📓 Record Prediction</div>
+    <div class="modal-title" data-i18n="modalPredTitle">📓 Record Prediction</div>
     <input type="hidden" id="pm-slug">
     <div class="form-group">
-      <label>Market Question</label>
+      <label data-i18n="mktQuestionLbl">Market Question</label>
       <textarea id="pm-question" rows="2" readonly style="color:var(--muted)"></textarea>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div class="form-group">
-        <label>Market Price (YES%)</label>
+        <label data-i18n="mktPricePct">Market Price (YES%)</label>
         <input type="number" id="pm-market-price" step="0.01" min="0" max="1" readonly>
       </div>
       <div class="form-group">
-        <label>My Probability (0–1)</label>
+        <label data-i18n="myProbLbl">My Probability (0–1)</label>
         <input type="number" id="pm-my-prob" step="0.01" min="0" max="1" placeholder="0.65">
       </div>
     </div>
     <div class="form-group">
-      <label>Category</label>
-      <input type="text" id="pm-category" placeholder="Politics / Sports / Crypto…">
+      <label data-i18n="categoryLbl">Category</label>
+      <input type="text" id="pm-category" data-i18n-ph="categoryPH" placeholder="Politics / Sports / Crypto…">
     </div>
     <div class="form-group">
-      <label>Reasoning</label>
-      <textarea id="pm-reasoning" placeholder="Why do you think this probability is more accurate?"></textarea>
+      <label data-i18n="reasoningLbl">Reasoning</label>
+      <textarea id="pm-reasoning" data-i18n-ph="reasoningPH" placeholder="Why do you think this probability is more accurate?"></textarea>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
-      <button class="btn btn-outline" onclick="closeModal('predict-modal')">Cancel</button>
-      <button class="btn btn-primary" onclick="submitPrediction()">Save Prediction</button>
+      <button class="btn btn-outline" onclick="closeModal('predict-modal')" data-i18n="cancel">Cancel</button>
+      <button class="btn btn-primary" onclick="submitPrediction()" data-i18n="savePred">Save Prediction</button>
     </div>
   </div>
 </div>
@@ -186,40 +186,40 @@ textarea{resize:vertical;min-height:70px}
 <!-- Paper Trade Modal -->
 <div class="modal" id="trade-modal">
   <div class="modal-box">
-    <div class="modal-title">💸 Paper Trade</div>
+    <div class="modal-title" data-i18n="modalTradeTitle">💸 Paper Trade</div>
     <input type="hidden" id="tm-slug">
     <div class="form-group">
-      <label>Market Question</label>
+      <label data-i18n="mktQuestionLbl">Market Question</label>
       <textarea id="tm-question" rows="2" readonly style="color:var(--muted)"></textarea>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
       <div class="form-group">
-        <label>Side</label>
+        <label data-i18n="sideLbl">Side</label>
         <select id="tm-side">
           <option value="YES">YES</option>
           <option value="NO">NO</option>
         </select>
       </div>
       <div class="form-group">
-        <label>Entry Price</label>
+        <label data-i18n="entryPriceLbl">Entry Price</label>
         <input type="number" id="tm-price" step="0.01" min="0" max="1">
       </div>
       <div class="form-group">
-        <label>Amount (USDC)</label>
+        <label data-i18n="amtLbl">Amount (USDC)</label>
         <input type="number" id="tm-size" step="1" min="1" placeholder="20">
       </div>
     </div>
     <div class="form-group">
-      <label>My Probability</label>
+      <label data-i18n="myProbLbl2">My Probability</label>
       <input type="number" id="tm-prob" step="0.01" min="0" max="1" placeholder="0.65">
     </div>
     <div class="form-group">
-      <label>Reasoning</label>
-      <textarea id="tm-reason" placeholder="Investment thesis…"></textarea>
+      <label data-i18n="reasonLbl">Reasoning</label>
+      <textarea id="tm-reason" data-i18n-ph="reasonPH" placeholder="Investment thesis…"></textarea>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
-      <button class="btn btn-outline" onclick="closeModal('trade-modal')">Cancel</button>
-      <button class="btn btn-success" onclick="submitTrade()">Place Trade</button>
+      <button class="btn btn-outline" onclick="closeModal('trade-modal')" data-i18n="cancel">Cancel</button>
+      <button class="btn btn-success" onclick="submitTrade()" data-i18n="placeTrade">Place Trade</button>
     </div>
   </div>
 </div>
@@ -258,7 +258,7 @@ const T = {
     appSub: 'Polymarket Prediction System',
     navOverview: 'Overview', navMarkets: 'Markets', navJournal: 'Journal',
     navPaper: 'Paper Trading', navAI: 'AI Analysis', navResolved: 'Resolved',
-    phaseLearn: 'Learn',
+    phase1: 'Phase 1', phase2: 'Phase 2', phase4: 'Phase 4', phaseLearn: 'Learn',
     loading: 'Loading…',
     refresh: '↻',
     // Overview
@@ -325,7 +325,7 @@ const T = {
     appSub: 'Polymarket 预测系统',
     navOverview: '总览', navMarkets: '市场浏览', navJournal: '预测日志',
     navPaper: '纸上交易', navAI: 'AI 分析', navResolved: '已结算',
-    phaseLearn: '学习',
+    phase1: '阶段1', phase2: '阶段2', phase4: '阶段4', phaseLearn: '学习',
     loading: '加载中…',
     refresh: '↻',
     totalPreds: '预测总数', resolved: '已结算:', winRate: '预测胜率',
@@ -395,48 +395,14 @@ function toggleLang() {
 }
 
 function applyStaticLang() {
-  // Sidebar nav labels
-  const nav = document.querySelectorAll('.nav-item');
-  const navKeys = ['navOverview','navMarkets','navJournal','navPaper','navAI','navResolved'];
-  const navIcons = ['🏠','📈','📓','💸','🤖','✅'];
-  const phaseTags = ['','p1','p1','p2','p4','p1'];
-  const phaseLabels = ['','Phase 1 / 阶段1','Phase 1 / 阶段1','Phase 2 / 阶段2','Phase 4 / 阶段4', t('phaseLearn')];
-  nav.forEach((btn, i) => {
-    btn.childNodes[1].textContent = ' ' + t(navKeys[i]);
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.dataset.i18n);
   });
-  document.querySelector('.logo p').textContent = t('appSub');
-  // Modal static text
-  document.querySelector('#predict-modal .modal-title').textContent = t('modalPredTitle');
-  document.querySelector('label[for-key="mktQuestionLbl"]') && null;
-  // Re-render modal labels
-  renderModalLabels();
-}
-
-function renderModalLabels() {
-  // Predict modal
-  const pm = document.getElementById('predict-modal');
-  pm.querySelectorAll('label')[0].textContent = t('mktQuestionLbl');
-  pm.querySelectorAll('label')[1].textContent = t('mktPricePct');
-  pm.querySelectorAll('label')[2].textContent = t('myProbLbl');
-  pm.querySelectorAll('label')[3].textContent = t('categoryLbl');
-  pm.querySelectorAll('label')[4].textContent = t('reasoningLbl');
-  document.getElementById('pm-category').placeholder = t('categoryPH');
-  document.getElementById('pm-reasoning').placeholder = t('reasoningPH');
-  pm.querySelector('.btn-outline').textContent = t('cancel');
-  pm.querySelector('.btn-primary').textContent = t('savePred');
-  document.querySelector('#predict-modal .modal-title').textContent = t('modalPredTitle');
-  // Trade modal
-  const tm = document.getElementById('trade-modal');
-  tm.querySelectorAll('label')[0].textContent = t('mktQuestionLbl');
-  tm.querySelectorAll('label')[1].textContent = t('sideLbl');
-  tm.querySelectorAll('label')[2].textContent = t('entryPriceLbl');
-  tm.querySelectorAll('label')[3].textContent = t('amtLbl');
-  tm.querySelectorAll('label')[4].textContent = t('myProbLbl2');
-  tm.querySelectorAll('label')[5].textContent = t('reasonLbl');
-  document.getElementById('tm-reason').placeholder = t('reasonPH');
-  tm.querySelector('.btn-outline').textContent = t('cancel');
-  tm.querySelector('.btn-success').textContent = t('placeTrade');
-  document.querySelector('#trade-modal .modal-title').textContent = t('modalTradeTitle');
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    el.placeholder = t(el.dataset.i18nPh);
+  });
+  const titleKeys = {overview:'navOverview',markets:'navMarkets',journal:'navJournal',paper:'navPaper',ai:'navAI',resolved:'navResolved'};
+  document.getElementById('page-title').textContent = t(titleKeys[currentPage] || 'navOverview');
 }
 
 let currentPage = 'overview';
