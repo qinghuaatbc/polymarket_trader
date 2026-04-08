@@ -19,7 +19,7 @@ from polymarket import PolymarketClient
 from journal import (
     add_prediction, resolve_prediction, get_predictions, prediction_stats,
     paper_trade, resolve_paper_trade, get_paper_trades, paper_trade_stats,
-    get_settings, reset_paper_account,
+    get_settings, reset_paper_account, ai_feedback_stats,
 )
 from ai_analyst import AIAnalyst
 
@@ -310,6 +310,8 @@ def _run_auto_cycle(cfg: AutoTradeConfig) -> dict:
             size_usd=size,
             my_probability=analysis.get("yes_probability", mkt["yes_price"]),
             reasoning=f"[AI Auto] {analysis.get('reasoning','')[:200]}",
+            ai_confidence=confidence,
+            ai_edge=edge,
         )
 
         if "error" in trade_result:
@@ -398,6 +400,11 @@ def api_auto_status():
         "next_run_ts": _auto_state["next_run_ts"],
         "cfg": _auto_state["cfg"],
     }
+
+
+@app.get("/api/ai/feedback")
+def api_ai_feedback():
+    return ai_feedback_stats()
 
 
 @app.get("/api/ai/auto-log")

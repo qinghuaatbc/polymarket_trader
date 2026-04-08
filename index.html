@@ -849,6 +849,12 @@ async function renderAuto() {
       </div>
     </div>
 
+    <!-- AI Feedback -->
+    <div class="card" style="margin-bottom:16px">
+      <h3 style="margin:0 0 12px">🧠 AI Accuracy Feedback</h3>
+      <div id="at-feedback">Loading…</div>
+    </div>
+
     <!-- Activity Log -->
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
@@ -860,6 +866,12 @@ async function renderAuto() {
       </div>
     </div>
   `;
+
+  // Populate AI feedback section
+  renderAIFeedback().then(html => {
+    const el = document.getElementById('at-feedback');
+    if (el) el.innerHTML = html;
+  });
 
   // Start backend-status poller to keep countdown live
   if (_autoStatusTimer) clearInterval(_autoStatusTimer);
@@ -878,6 +890,43 @@ async function renderAuto() {
       }
     }, 5000);
   }
+}
+
+async function renderAIFeedback() {
+  const f = await api('/ai/feedback');
+  if (!f.total_ai_trades) {
+    return '<div style="color:var(--muted);text-align:center;padding:16px">No resolved AI trades yet — feedback will appear after trades settle.</div>';
+  }
+  const pnlColor = f.total_pnl >= 0 ? 'var(--green)' : 'var(--red)';
+  const wrColor  = f.win_rate >= 0.55 ? 'var(--green)' : f.win_rate >= 0.45 ? 'var(--yellow)' : 'var(--red)';
+
+  const bucketRows = (f.confidence_breakdown || []).map(b => `
+    <tr>
+      <td>${b.bucket}</td>
+      <td>${b.trades}</td>
+      <td style="color:${b.win_rate>=0.55?'var(--green)':b.win_rate>=0.45?'var(--yellow)':'var(--red)'}">${(b.win_rate*100).toFixed(0)}%</td>
+      <td style="color:${b.total_pnl>=0?'var(--green)':'var(--red)'}">${b.total_pnl>=0?'+':''}$${b.total_pnl.toFixed(2)}</td>
+    </tr>`).join('');
+
+  return `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+      <div style="text-align:center">
+        <div style="font-size:11px;color:var(--muted)">AI TRADES RESOLVED</div>
+        <div style="font-size:24px;font-weight:700">${f.total_ai_trades}</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:11px;color:var(--muted)">WIN RATE</div>
+        <div style="font-size:24px;font-weight:700;color:${wrColor}">${(f.win_rate*100).toFixed(0)}%</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:11px;color:var(--muted)">TOTAL P&L</div>
+        <div style="font-size:24px;font-weight:700;color:${pnlColor}">${f.total_pnl>=0?'+':''}$${f.total_pnl.toFixed(2)}</div>
+      </div>
+    </div>
+    <table style="width:100%;font-size:12px">
+      <thead><tr style="color:var(--muted)"><th style="text-align:left">Confidence</th><th>Trades</th><th>Win Rate</th><th>P&L</th></tr></thead>
+      <tbody>${bucketRows}</tbody>
+    </table>`;
 }
 
 function renderAutoLog(log) {

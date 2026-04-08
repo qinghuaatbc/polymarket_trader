@@ -145,6 +145,8 @@ def paper_trade(
     size_usd: float,        # position size in USD
     my_probability: float,
     reasoning: str = "",
+    ai_confidence: float = None,  # AI confidence score 0-1
+    ai_edge: float = None,        # AI predicted edge
 ) -> dict:
     settings = _load_settings()
     if size_usd > settings["paper_balance"]:
@@ -165,6 +167,8 @@ def paper_trade(
         "shares": round(shares, 4),
         "my_probability": my_probability,
         "reasoning": reasoning,
+        "ai_confidence": ai_confidence,
+        "ai_edge": ai_edge,
         "outcome": None,
         "pnl": None,
         "resolved": False,
@@ -245,6 +249,57 @@ def paper_trade_stats() -> dict:
         "roi": round(roi, 4),
         "avg_pnl": round(total_pnl / len(resolved), 4),
         "ready_for_phase3": win_rate >= 0.55 and len(resolved) >= 20 and total_pnl > 0,
+    }
+
+
+def ai_feedback_stats() -> dict:
+    """Analyse AI prediction accuracy from resolved paper trades that have ai_confidence."""
+    trades = _load(PAPER_TRADES_FILE)
+    ai_trades = [t for t in trades if t.get("ai_confidence") is not None and t["resolved"]]
+
+    if not ai_trades:
+        return {"total_ai_trades": 0, "message": "No resolved AI trades yet."}
+
+    wins = [t for t in ai_trades if t["pnl"] and t["pnl"] > 0]
+    win_rate = len(wins) / len(ai_trades)
+    total_pnl = sum(t["pnl"] for t in ai_trades if t["pnl"] is not None)
+
+    # Accuracy by confidence bucket
+    buckets = {}
+    for t in ai_trades:
+        c = t["ai_confidence"]
+        if c >= 0.8:   key = "high (≥0.8)"
+        elif c >= 0.7: key = "medium (0.7-0.8)"
+        else:          key = "low (<0.7)"
+        if key not in buckets:
+            buckets[key] = {"trades": 0, "wins": 0, "pnl": 0.0}
+        buckets[key]["trades"] += 1
+        if t["pnl"] and t["pnl"] > 0:
+            buckets[key]["wins"] += 1
+        buckets[key]["pnl"] += t["pnl"] or 0
+
+    confidence_breakdown = [
+        {
+            "bucket": k,
+            "trades": v["trades"],
+            "win_rate": round(v["wins"] / v["trades"], 4),
+            "total_pnl": round(v["pnl"], 2),
+        }
+        for k, v in buckets.items()
+    ]
+
+    # Best and worst trades
+    sorted_trades = sorted(ai_trades, key=lambda t: t["pnl"] or 0)
+    worst = sorted_trades[:3]
+    best  = sorted_trades[-3:][::-1]
+
+    return {
+        "total_ai_trades": len(ai_trades),
+        "win_rate": round(win_rate, 4),
+        "total_pnl": round(total_pnl, 2),
+        "confidence_breakdown": confidence_breakdown,
+        "best_trades": [{"question": t["question"][:60], "confidence": t["ai_confidence"], "pnl": t["pnl"]} for t in best],
+        "worst_trades": [{"question": t["question"][:60], "confidence": t["ai_confidence"], "pnl": t["pnl"]} for t in worst],
     }
 
 
