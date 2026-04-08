@@ -152,16 +152,22 @@ Please provide:
             return []
 
         market_list = "\n".join([
-            f"- {m['question']} (market price: {m['yes_price']*100:.1f}%, volume: ${m['volume']:,.0f})"
-            for m in markets[:20]
+            f"- slug={m['slug']} | {m['question']} | price={m['yes_price']*100:.1f}% | volume=${m['volume']:,.0f}"
+            for m in markets[:50]
         ])
 
-        prompt = f"""From these Polymarket markets, identify the most noteworthy opportunities:
+        prompt = f"""You are a prediction market analyst. Review these Polymarket markets and find trading opportunities.
 
 {market_list}
 
-Select the top 3 markets you believe may be mispriced and explain why.
-Output as a JSON array: [{{"slug": "...", "reason": "...", "suggested_side": "YES/NO"}}]"""
+Rules:
+- Look for markets where the price seems WRONG vs what you know (e.g. price=10% but you think it should be 30%+)
+- Prefer markets with volume > $1000 (more liquid)
+- Avoid markets priced 45-55% (too uncertain)
+- Always pick exactly 3, even if opportunities are modest
+
+Output ONLY a JSON array, no other text:
+[{{"slug": "...", "reason": "...", "suggested_side": "YES or NO"}}]"""
 
         try:
             msg = self._client.messages.create(

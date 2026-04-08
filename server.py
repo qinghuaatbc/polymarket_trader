@@ -226,7 +226,7 @@ class AutoTradeConfig(BaseModel):
     min_confidence: float = 0.65   # minimum AI confidence to trade
     min_edge: float = 0.05         # minimum edge vs market price
     trade_size: float = 20.0       # USD per trade
-    scan_limit: int = 20           # how many markets to scan
+    scan_limit: int = 50           # how many markets to scan
 
 def _log(msg: str, status: str = "info", trade: dict = None):
     entry = {
@@ -360,7 +360,7 @@ class AutoStartConfig(BaseModel):
     min_confidence: float = 0.65
     min_edge: float = 0.05
     trade_size: float = 20.0
-    scan_limit: int = 20
+    scan_limit: int = 50
     interval_min: int = 30
 
 
