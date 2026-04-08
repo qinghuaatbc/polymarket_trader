@@ -6,6 +6,9 @@ Output: probability estimate + confidence + reasoning
 from __future__ import annotations
 import os
 import json
+import urllib.request
+import urllib.parse
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from dotenv import load_dotenv
 import anthropic
@@ -44,6 +47,27 @@ Principles:
 """
 
 
+def _fetch_news(query: str, max_items: int = 5) -> str:
+    """Fetch recent headlines from Google News RSS for a given query."""
+    try:
+        q = urllib.parse.quote(query)
+        url = f"https://news.google.com/rss/search?q={q}&hl=en-US&gl=US&ceid=US:en"
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            xml = resp.read()
+        root = ET.fromstring(xml)
+        items = root.findall(".//item")[:max_items]
+        headlines = []
+        for item in items:
+            title = item.findtext("title", "").strip()
+            pub = item.findtext("pubDate", "").strip()
+            if title:
+                headlines.append(f"- {title} ({pub[:16]})")
+        return "\n".join(headlines) if headlines else "No recent news found."
+    except Exception as e:
+        return f"News fetch failed: {e}"
+
+
 class AIAnalyst:
     def __init__(self):
         key = os.getenv("ANTHROPIC_API_KEY")
@@ -57,13 +81,17 @@ class AIAnalyst:
         if not self._client:
             return self._fallback(market_price)
 
+        # Auto-fetch news if none provided
+        if not news:
+            news = _fetch_news(question)
+
         prompt = f"""Analyze this prediction market:
 
 **Question:** {question}
 **Current market price (YES probability):** {market_price*100:.1f}%
 
-**Relevant news/background:**
-{news or "No additional information"}
+**Recent news:**
+{news}
 
 **Other context:**
 {context or "None"}
