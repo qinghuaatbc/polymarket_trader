@@ -103,13 +103,12 @@ Please provide your probability estimate and analysis."""
                 model=MODEL,
                 max_tokens=1024,
                 system=ANALYST_SYSTEM,
-                messages=[{"role": "user", "content": prompt}],
+                messages=[
+                    {"role": "user", "content": prompt},
+                    {"role": "assistant", "content": "{"},
+                ],
             )
-            text = msg.content[0].text.strip()
-            if text.startswith("```"):
-                text = text.split("```")[1]
-                if text.startswith("json"):
-                    text = text[4:]
+            text = "{" + msg.content[0].text.strip()
             result = json.loads(text)
             result["market_price"] = market_price
             result["edge"] = round(result.get("yes_probability", market_price) - market_price, 4)
@@ -173,13 +172,12 @@ Output ONLY a JSON array, no other text:
             msg = self._client.messages.create(
                 model=MODEL,
                 max_tokens=512,
-                messages=[{"role": "user", "content": prompt}],
+                messages=[
+                    {"role": "user", "content": prompt},
+                    {"role": "assistant", "content": "["},
+                ],
             )
-            text = msg.content[0].text.strip()
-            if text.startswith("```"):
-                text = text.split("```")[1]
-                if text.startswith("json"):
-                    text = text[4:]
+            text = "[" + msg.content[0].text.strip()
             return json.loads(text)
         except Exception:
             return []
