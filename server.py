@@ -45,7 +45,7 @@ _auto_stop_event = threading.Event()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     try:
-        markets = _poly.fetch_markets(limit=200)
+        markets = _poly.fetch_markets_multi(per_strategy=100)
         _market_cache.extend([m.__dict__ for m in markets])
     except Exception as e:
         print(f"Market preload error: {e}")
@@ -296,10 +296,10 @@ def _run_auto_cycle(cfg: AutoTradeConfig) -> dict:
         return {**results, "skipped": open_trades}
 
     try:
-        markets = _poly.fetch_markets(limit=cfg.scan_limit)
+        markets = _poly.fetch_markets_multi(per_strategy=cfg.scan_limit // 3)
         market_list = [m.__dict__ for m in markets]
         results["scanned"] = len(market_list)
-        _log(f"Scanned {len(market_list)} markets")
+        _log(f"Scanned {len(market_list)} markets (multi-strategy)")
     except Exception as e:
         _log(f"Failed to fetch markets: {e}", "error")
         return {**results, "error": str(e)}

@@ -39,13 +39,13 @@ class PolymarketClient:
     def __init__(self):
         self._http = httpx.Client(timeout=15.0)
 
-    def get_markets(self, limit=50, offset=0, category="", closed=False) -> list[dict]:
+    def get_markets(self, limit=50, offset=0, category="", closed=False, order="volume24hr") -> list[dict]:
         params = {
             "limit": limit,
             "offset": offset,
             "active": "true",
             "closed": str(closed).lower(),
-            "order": "volume24hr",
+            "order": order,
             "ascending": "false",
         }
         if category:
@@ -93,6 +93,20 @@ class PolymarketClient:
     def fetch_markets(self, limit=50, category="", closed=False) -> list[Market]:
         raws = self.get_markets(limit=limit, category=category, closed=closed)
         return [self.parse_market(r) for r in raws]
+
+    def fetch_markets_multi(self, per_strategy=100) -> list[Market]:
+        """Fetch from multiple sort strategies and deduplicate by slug."""
+        strategies = ["volume24hr", "liquidityNum", "volume1wk"]
+        seen: set[str] = set()
+        result: list[Market] = []
+        for order in strategies:
+            raws = self.get_markets(limit=per_strategy, order=order)
+            for r in raws:
+                slug = r.get("slug", "")
+                if slug and slug not in seen:
+                    seen.add(slug)
+                    result.append(self.parse_market(r))
+        return result
 
     def fetch_resolved(self, limit=30) -> list[Market]:
         """Fetch recently resolved markets for learning."""
