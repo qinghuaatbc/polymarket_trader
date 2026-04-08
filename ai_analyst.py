@@ -43,8 +43,9 @@ Principles:
 - Stay objective, base analysis on facts
 - Acknowledge uncertainty
 - If information is insufficient, state what additional info is needed
-- Recommend SKIP if confidence < 0.6
-- Recommend SKIP if edge < 3% (fees eat profit)
+- Recommend SKIP if confidence < 0.55
+- Recommend SKIP if edge < 2% (fees eat profit)
+- Recommend BUY_YES or BUY_NO whenever you have a genuine view with confidence >= 0.55
 """
 
 
