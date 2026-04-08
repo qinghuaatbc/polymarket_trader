@@ -49,6 +49,13 @@ async def lifespan(app: FastAPI):
         _market_cache.extend([m.__dict__ for m in markets])
     except Exception as e:
         print(f"Market preload error: {e}")
+    # Auto-start scheduler on boot with default config
+    _auto_state["running"] = True
+    _auto_state["next_run_ts"] = time.time()
+    t = threading.Thread(target=_auto_worker, daemon=True)
+    t.start()
+    global _auto_thread
+    _auto_thread = t
     yield
 
 
