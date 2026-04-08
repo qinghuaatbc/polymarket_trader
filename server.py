@@ -36,7 +36,7 @@ _auto_state: dict = {
     "running": False,
     "interval_min": 30,
     "next_run_ts": None,  # unix timestamp of next scan
-    "cfg": {"min_confidence": 0.65, "min_edge": 0.05, "trade_size": 20.0, "scan_limit": 200},
+    "cfg": {"min_confidence": 0.65, "min_edge": 0.05, "trade_size": 20.0, "scan_limit": 300},
 }
 _auto_thread: threading.Thread | None = None
 _auto_stop_event = threading.Event()
@@ -266,7 +266,7 @@ class AutoTradeConfig(BaseModel):
     min_confidence: float = 0.65   # minimum AI confidence to trade
     min_edge: float = 0.05         # minimum edge vs market price
     trade_size: float = 20.0       # USD per trade
-    scan_limit: int = 200          # how many markets to scan
+    scan_limit: int = 300          # how many markets to scan per strategy
 
 def _log(msg: str, status: str = "info", trade: dict = None):
     entry = {
@@ -296,7 +296,7 @@ def _run_auto_cycle(cfg: AutoTradeConfig) -> dict:
         return {**results, "skipped": open_trades}
 
     try:
-        markets = _poly.fetch_markets_multi(per_strategy=cfg.scan_limit // 3)
+        markets = _poly.fetch_markets_multi(per_strategy=cfg.scan_limit)
         market_list = [m.__dict__ for m in markets]
         results["scanned"] = len(market_list)
         _log(f"Scanned {len(market_list)} markets (multi-strategy)")
@@ -400,7 +400,7 @@ class AutoStartConfig(BaseModel):
     min_confidence: float = 0.65
     min_edge: float = 0.05
     trade_size: float = 20.0
-    scan_limit: int = 200
+    scan_limit: int = 300
     interval_min: int = 30
 
 
