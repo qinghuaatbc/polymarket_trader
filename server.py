@@ -36,7 +36,7 @@ _auto_state: dict = {
     "running": False,
     "interval_min": 30,
     "next_run_ts": None,  # unix timestamp of next scan
-    "cfg": {"min_confidence": 0.55, "min_edge": 0.03, "trade_size": 20.0, "scan_limit": 300},
+    "cfg": {"min_confidence": 0.55, "min_edge": 0.03, "trade_size": 30.0, "scan_limit": 300},
 }
 _auto_thread: threading.Thread | None = None
 _auto_stop_event = threading.Event()
@@ -272,7 +272,7 @@ def api_daily_summary():
 class AutoTradeConfig(BaseModel):
     min_confidence: float = 0.55   # minimum AI confidence to trade
     min_edge: float = 0.03         # minimum edge vs market price
-    trade_size: float = 20.0       # USD per trade
+    trade_size: float = 30.0       # USD per trade
     scan_limit: int = 300          # how many markets to scan per strategy
 
 def _log(msg: str, status: str = "info", trade: dict = None):
@@ -406,7 +406,7 @@ def api_auto_trade(cfg: AutoTradeConfig):
 class AutoStartConfig(BaseModel):
     min_confidence: float = 0.55
     min_edge: float = 0.03
-    trade_size: float = 20.0
+    trade_size: float = 30.0
     scan_limit: int = 300
     interval_min: int = 30
 
