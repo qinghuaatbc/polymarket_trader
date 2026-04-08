@@ -772,13 +772,15 @@ function renderAnalysisResult(elId, r) {
 
 // ── Resolved Markets (Learning) ───────────────────────────────────────────────
 // ── AI Auto Trade ─────────────────────────────────────────────────────────────
-let _autoTimer = null;
-let _autoCfg = { min_confidence: 0.65, min_edge: 0.05, trade_size: 20, scan_limit: 20 };
-let _autoIntervalMin = 30;
+let _autoStatusTimer = null;  // polls /ai/auto-status while on this page
 
 async function renderAuto() {
-  const [stats, logData] = await Promise.all([api('/paper/stats'), api('/ai/auto-log')]);
-  const running = _autoTimer !== null;
+  const [stats, logData, status] = await Promise.all([
+    api('/paper/stats'), api('/ai/auto-log'), api('/ai/auto-status'),
+  ]);
+  const running = status.running;
+  const cfg = status.cfg || {};
+  const intervalMin = status.interval_min || 30;
   const el = document.getElementById('content');
   el.innerHTML = `
     <div class="alert alert-info" style="margin-bottom:16px">
@@ -792,19 +794,19 @@ async function renderAuto() {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
           <div class="form-group">
             <label>Min Confidence</label>
-            <input type="number" id="at-confidence" step="0.05" min="0.5" max="1" value="${_autoCfg.min_confidence}">
+            <input type="number" id="at-confidence" step="0.05" min="0.5" max="1" value="${cfg.min_confidence ?? 0.65}">
           </div>
           <div class="form-group">
             <label>Min Edge</label>
-            <input type="number" id="at-edge" step="0.01" min="0.01" max="0.5" value="${_autoCfg.min_edge}">
+            <input type="number" id="at-edge" step="0.01" min="0.01" max="0.5" value="${cfg.min_edge ?? 0.05}">
           </div>
           <div class="form-group">
             <label>Trade Size (USD)</label>
-            <input type="number" id="at-size" step="5" min="5" max="100" value="${_autoCfg.trade_size}">
+            <input type="number" id="at-size" step="5" min="5" max="100" value="${cfg.trade_size ?? 20}">
           </div>
           <div class="form-group">
             <label>Scan Interval (min)</label>
-            <input type="number" id="at-interval" step="5" min="5" max="120" value="${_autoIntervalMin}">
+            <input type="number" id="at-interval" step="5" min="5" max="120" value="${intervalMin}">
           </div>
         </div>
         <div style="display:flex;gap:8px;margin-top:4px">
@@ -819,7 +821,7 @@ async function renderAuto() {
           </button>
         </div>
         <div id="at-status" style="margin-top:10px;font-size:12px;color:var(--muted)">
-          ${running ? `⚡ Running — next scan in <span id="at-countdown"></span>` : 'Stopped'}
+          ${running ? `⚡ Running — next scan in <span id="at-countdown">…</span>` : 'Stopped'}
         </div>
       </div>
 
@@ -859,7 +861,23 @@ async function renderAuto() {
     </div>
   `;
 
-  if (running) startCountdown();
+  // Start backend-status poller to keep countdown live
+  if (_autoStatusTimer) clearInterval(_autoStatusTimer);
+  if (running) {
+    updateCountdown(status.next_run_ts);
+    _autoStatusTimer = setInterval(async () => {
+      if (currentPage !== 'auto') { clearInterval(_autoStatusTimer); _autoStatusTimer = null; return; }
+      const s = await api('/ai/auto-status');
+      updateCountdown(s.next_run_ts);
+      if (!s.running) {
+        clearInterval(_autoStatusTimer); _autoStatusTimer = null;
+        const btn = document.getElementById('at-toggle');
+        if (btn) { btn.textContent = '▶ Start Auto Trade'; btn.className = 'btn btn-success'; }
+        const el = document.getElementById('at-status');
+        if (el) el.textContent = 'Stopped';
+      }
+    }, 5000);
+  }
 }
 
 function renderAutoLog(log) {
@@ -874,23 +892,24 @@ function renderAutoLog(log) {
   }).join('');
 }
 
-function saveCfg() {
-  _autoCfg.min_confidence = parseFloat(document.getElementById('at-confidence').value) || 0.65;
-  _autoCfg.min_edge       = parseFloat(document.getElementById('at-edge').value) || 0.05;
-  _autoCfg.trade_size     = parseFloat(document.getElementById('at-size').value) || 20;
-  _autoIntervalMin        = parseInt(document.getElementById('at-interval').value) || 30;
-  _autoCfg.scan_limit     = 20;
+function readCfg() {
+  return {
+    min_confidence: parseFloat(document.getElementById('at-confidence').value) || 0.65,
+    min_edge:       parseFloat(document.getElementById('at-edge').value) || 0.05,
+    trade_size:     parseFloat(document.getElementById('at-size').value) || 20,
+    interval_min:   parseInt(document.getElementById('at-interval').value) || 30,
+    scan_limit:     20,
+  };
 }
 
 async function runOneCycle() {
-  saveCfg();
+  const cfg = readCfg();
   document.getElementById('at-status').innerHTML = '<span style="color:var(--yellow)">🏁 Auto-settling open trades…</span>';
-  // First: settle any resolved open trades
   try { await api('/paper/auto-settle', 'POST'); } catch(e) {}
 
   document.getElementById('at-status').innerHTML = '<span style="color:var(--yellow)">🔄 Scanning for new trades…</span>';
   try {
-    const r = await api('/ai/auto-trade', 'POST', _autoCfg);
+    const r = await api('/ai/auto-trade', 'POST', cfg);
     const logData = await api('/ai/auto-log');
     document.getElementById('at-log').innerHTML = renderAutoLog(logData.log);
     document.getElementById('at-status').innerHTML =
@@ -932,50 +951,34 @@ async function autoSettle() {
   }
 }
 
-let _countdown = 0;
 let _countdownTimer = null;
 
-function startCountdown() {
-  _countdown = _autoIntervalMin * 60;
+function updateCountdown(nextRunTs) {
   if (_countdownTimer) clearInterval(_countdownTimer);
-  _countdownTimer = setInterval(() => {
-    _countdown--;
+  if (!nextRunTs) return;
+  const tick = () => {
+    const secs = Math.max(0, Math.round(nextRunTs - Date.now() / 1000));
     const el = document.getElementById('at-countdown');
     if (el) {
-      const m = Math.floor(_countdown / 60), s = _countdown % 60;
+      const m = Math.floor(secs / 60), s = secs % 60;
       el.textContent = `${m}:${s.toString().padStart(2,'0')}`;
     }
-    if (_countdown <= 0) clearInterval(_countdownTimer);
-  }, 1000);
+    if (secs <= 0) clearInterval(_countdownTimer);
+  };
+  tick();
+  _countdownTimer = setInterval(tick, 1000);
 }
 
 async function toggleAutoTrade() {
-  if (_autoTimer) {
-    // Stop
-    clearInterval(_autoTimer);
-    if (_countdownTimer) clearInterval(_countdownTimer);
-    _autoTimer = null;
-    _countdownTimer = null;
+  const s = await api('/ai/auto-status');
+  if (s.running) {
+    await api('/ai/auto-stop', 'POST');
+    if (_countdownTimer) { clearInterval(_countdownTimer); _countdownTimer = null; }
+    if (_autoStatusTimer) { clearInterval(_autoStatusTimer); _autoStatusTimer = null; }
     await renderAuto();
   } else {
-    // Start
-    saveCfg();
-    // Run immediately then on interval
-    await runOneCycle();
-    _autoTimer = setInterval(async () => {
-      await runOneCycle();
-      startCountdown();
-    }, _autoIntervalMin * 60 * 1000);
-    startCountdown();
-    // Update button
-    const btn = document.getElementById('at-toggle');
-    if (btn) {
-      btn.textContent = '⏹ Stop Auto Trade';
-      btn.className = 'btn btn-danger';
-    }
-    document.getElementById('at-status').innerHTML =
-      `⚡ Running — next scan in <span id="at-countdown"></span>`;
-    startCountdown();
+    await api('/ai/auto-start', 'POST', readCfg());
+    await renderAuto();
   }
 }
 

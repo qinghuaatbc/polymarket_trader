@@ -6,6 +6,8 @@ Visit: http://localhost:8002
 from __future__ import annotations
 import json
 import datetime
+import threading
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -28,6 +30,16 @@ _market_cache: list[dict] = []
 # AI auto-trade activity log (in-memory, last 100 entries)
 _auto_log: list[dict] = []
 MAX_LOG = 100
+
+# Background scheduler state
+_auto_state: dict = {
+    "running": False,
+    "interval_min": 30,
+    "next_run_ts": None,  # unix timestamp of next scan
+    "cfg": {"min_confidence": 0.65, "min_edge": 0.05, "trade_size": 20.0, "scan_limit": 20},
+}
+_auto_thread: threading.Thread | None = None
+_auto_stop_event = threading.Event()
 
 
 @asynccontextmanager
@@ -227,15 +239,10 @@ def _log(msg: str, status: str = "info", trade: dict = None):
     if len(_auto_log) > MAX_LOG:
         _auto_log.pop()
 
-@app.post("/api/ai/auto-trade")
-def api_auto_trade(cfg: AutoTradeConfig):
-    """
-    One scan cycle: AI scans markets → analyses top candidates → places paper trades.
-    Call this periodically from the frontend.
-    """
+def _run_auto_cycle(cfg: AutoTradeConfig) -> dict:
+    """Core scan cycle — shared by the manual endpoint and the background scheduler."""
     results = {"scanned": 0, "analysed": 0, "traded": 0, "skipped": 0, "errors": []}
 
-    # Check balance
     stats = paper_trade_stats()
     balance = stats.get("balance", 0)
     open_trades = stats.get("open_trades", 0)
@@ -248,7 +255,6 @@ def api_auto_trade(cfg: AutoTradeConfig):
         _log(f"Too many open trades ({open_trades}), skipping scan", "skip")
         return {**results, "skipped": open_trades}
 
-    # Step 1: Fetch markets
     try:
         markets = _poly.fetch_markets(limit=cfg.scan_limit)
         market_list = [m.__dict__ for m in markets]
@@ -258,7 +264,6 @@ def api_auto_trade(cfg: AutoTradeConfig):
         _log(f"Failed to fetch markets: {e}", "error")
         return {**results, "error": str(e)}
 
-    # Step 2: AI picks top candidates
     try:
         candidates = _analyst.find_opportunities(market_list)
         _log(f"AI identified {len(candidates)} candidates")
@@ -270,22 +275,14 @@ def api_auto_trade(cfg: AutoTradeConfig):
         _log("No candidates found this cycle", "skip")
         return results
 
-    # Step 3: Deep-analyse each candidate and trade if criteria met
-    for opp in candidates[:3]:  # max 3 trades per cycle
+    for opp in candidates[:3]:
         slug = opp.get("slug", "")
-        suggested_side = opp.get("suggested_side", "YES").upper()
-
-        # Find market data
         mkt = next((m for m in market_list if m["slug"] == slug), None)
         if not mkt:
             continue
 
-        # Deep analysis
         try:
-            analysis = _analyst.analyse(
-                question=mkt["question"],
-                market_price=mkt["yes_price"],
-            )
+            analysis = _analyst.analyse(question=mkt["question"], market_price=mkt["yes_price"])
             results["analysed"] += 1
         except Exception as e:
             _log(f"Analysis failed for {slug}: {e}", "error")
@@ -297,21 +294,14 @@ def api_auto_trade(cfg: AutoTradeConfig):
         recommendation = analysis.get("recommendation", "SKIP")
 
         if recommendation == "SKIP" or confidence < cfg.min_confidence or edge < cfg.min_edge:
-            _log(
-                f"SKIP {slug[:30]} — confidence={confidence:.0%} edge={edge:.1%} rec={recommendation}",
-                "skip"
-            )
+            _log(f"SKIP {slug[:30]} — confidence={confidence:.0%} edge={edge:.1%} rec={recommendation}", "skip")
             results["skipped"] += 1
             continue
 
-        # Decide side
         side = "YES" if recommendation == "BUY_YES" else "NO"
         price = mkt["yes_price"] if side == "YES" else mkt["no_price"]
-
-        # Check won't exceed 10% balance rule
         size = min(cfg.trade_size, balance * 0.1)
 
-        # Place paper trade
         trade_result = paper_trade(
             market_slug=slug,
             question=mkt["question"],
@@ -326,16 +316,88 @@ def api_auto_trade(cfg: AutoTradeConfig):
             _log(f"Trade failed: {trade_result['error']}", "error")
             results["errors"].append(trade_result["error"])
         else:
-            msg = f"TRADE {side} {slug[:25]} @ {price:.1%} | conf={confidence:.0%} edge={edge:.1%} size=${size:.0f}"
-            _log(msg, "trade", trade_result)
+            _log(f"TRADE {side} {slug[:25]} @ {price:.1%} | conf={confidence:.0%} edge={edge:.1%} size=${size:.0f}", "trade", trade_result)
             results["traded"] += 1
-            balance -= size  # update local balance estimate
-
+            balance -= size
             if balance < cfg.trade_size:
                 _log("Balance too low for more trades", "info")
                 break
 
     return results
+
+
+def _auto_worker():
+    """Background thread: runs scan cycles on the configured interval until stopped."""
+    cfg = AutoTradeConfig(**_auto_state["cfg"])
+    interval_sec = _auto_state["interval_min"] * 60
+
+    while not _auto_stop_event.is_set():
+        _log("[Scheduler] Starting scan cycle")
+        try:
+            _run_auto_cycle(cfg)
+        except Exception as e:
+            _log(f"[Scheduler] Cycle error: {e}", "error")
+
+        if _auto_stop_event.is_set():
+            break
+
+        _auto_state["next_run_ts"] = time.time() + interval_sec
+        _auto_stop_event.wait(timeout=interval_sec)
+
+    _auto_state["running"] = False
+    _auto_state["next_run_ts"] = None
+
+
+@app.post("/api/ai/auto-trade")
+def api_auto_trade(cfg: AutoTradeConfig):
+    """Single manual scan cycle (Scan Once button)."""
+    return _run_auto_cycle(cfg)
+
+
+class AutoStartConfig(BaseModel):
+    min_confidence: float = 0.65
+    min_edge: float = 0.05
+    trade_size: float = 20.0
+    scan_limit: int = 20
+    interval_min: int = 30
+
+
+@app.post("/api/ai/auto-start")
+def api_auto_start(body: AutoStartConfig):
+    global _auto_thread
+    if _auto_state["running"]:
+        return {"status": "already_running"}
+    _auto_state["cfg"] = {
+        "min_confidence": body.min_confidence,
+        "min_edge": body.min_edge,
+        "trade_size": body.trade_size,
+        "scan_limit": body.scan_limit,
+    }
+    _auto_state["interval_min"] = body.interval_min
+    _auto_state["running"] = True
+    _auto_state["next_run_ts"] = time.time()
+    _auto_stop_event.clear()
+    _auto_thread = threading.Thread(target=_auto_worker, daemon=True)
+    _auto_thread.start()
+    return {"status": "started"}
+
+
+@app.post("/api/ai/auto-stop")
+def api_auto_stop():
+    _auto_stop_event.set()
+    _auto_state["running"] = False
+    _auto_state["next_run_ts"] = None
+    return {"status": "stopped"}
+
+
+@app.get("/api/ai/auto-status")
+def api_auto_status():
+    return {
+        "running": _auto_state["running"],
+        "interval_min": _auto_state["interval_min"],
+        "next_run_ts": _auto_state["next_run_ts"],
+        "cfg": _auto_state["cfg"],
+    }
 
 
 @app.get("/api/ai/auto-log")
