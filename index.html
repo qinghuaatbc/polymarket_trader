@@ -649,6 +649,7 @@ async function renderPaper() {
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <div class="section-title" style="margin:0">${t('tradeLog')}</div>
         <div style="display:flex;gap:8px">
+          <button class="btn btn-outline btn-sm" onclick="paperAutoSettle()" style="border-color:var(--yellow);color:var(--yellow)">🏁 Auto Settle</button>
           <button class="btn btn-outline btn-sm" onclick="if(confirm(t('resetConfirm')))resetPaper()">${t('resetAccount')}</button>
           <button class="btn btn-primary btn-sm" onclick="showPage('markets')">${t('browseMarkets2')}</button>
         </div>
@@ -811,7 +812,10 @@ async function renderAuto() {
             ${running ? '⏹ Stop Auto Trade' : '▶ Start Auto Trade'}
           </button>
           <button class="btn btn-outline" onclick="runOneCycle()" ${running ? 'disabled' : ''}>
-            🔄 Run Once Now
+            🔄 Scan Once
+          </button>
+          <button class="btn btn-outline" onclick="autoSettle()" style="border-color:var(--yellow);color:var(--yellow)">
+            🏁 Auto Settle
           </button>
         </div>
         <div id="at-status" style="margin-top:10px;font-size:12px;color:var(--muted)">
@@ -880,8 +884,11 @@ function saveCfg() {
 
 async function runOneCycle() {
   saveCfg();
-  const btn = document.getElementById('at-toggle');
-  document.getElementById('at-status').innerHTML = '<span style="color:var(--yellow)">🔄 Scanning…</span>';
+  document.getElementById('at-status').innerHTML = '<span style="color:var(--yellow)">🏁 Auto-settling open trades…</span>';
+  // First: settle any resolved open trades
+  try { await api('/paper/auto-settle', 'POST'); } catch(e) {}
+
+  document.getElementById('at-status').innerHTML = '<span style="color:var(--yellow)">🔄 Scanning for new trades…</span>';
   try {
     const r = await api('/ai/auto-trade', 'POST', _autoCfg);
     const logData = await api('/ai/auto-log');
@@ -889,11 +896,39 @@ async function runOneCycle() {
     document.getElementById('at-status').innerHTML =
       `✅ Done — scanned ${r.scanned}, traded ${r.traded}, skipped ${r.skipped}` +
       (r.error ? ` <span style="color:var(--red)">${r.error}</span>` : '');
-    // refresh stats
-    const stats = await api('/paper/stats');
-    // update stats display inline
   } catch(e) {
     document.getElementById('at-status').innerHTML = `<span style="color:var(--red)">❌ ${e}</span>`;
+  }
+}
+
+async function autoSettle() {
+  const statusEl = document.getElementById('at-status');
+  if (statusEl) statusEl.innerHTML = '<span style="color:var(--yellow)">🏁 Checking open trades…</span>';
+  try {
+    const r = await api('/paper/auto-settle', 'POST');
+    const logData = await api('/ai/auto-log');
+    const logEl = document.getElementById('at-log');
+    if (logEl) logEl.innerHTML = renderAutoLog(logData.log);
+
+    const settled = r.settled?.length || 0;
+    const open = r.still_open?.length || 0;
+    const errors = r.errors?.length || 0;
+
+    let msg = `🏁 Checked ${r.checked} open trades — settled ${settled}, still open ${open}`;
+    if (errors) msg += ` <span style="color:var(--red)">(${errors} errors)</span>`;
+
+    // Show settled details
+    if (settled > 0) {
+      const pnl = r.settled.reduce((sum, t) => sum + (t.pnl || 0), 0);
+      msg += ` | PnL: <span style="color:${pnl>=0?'var(--green)':'var(--red)'}">${pnl>=0?'+':''}$${pnl.toFixed(2)}</span>`;
+    }
+
+    if (statusEl) statusEl.innerHTML = msg;
+
+    // If on paper page, reload it
+    if (currentPage === 'paper') loadPage();
+  } catch(e) {
+    if (statusEl) statusEl.innerHTML = `<span style="color:var(--red)">❌ ${e}</span>`;
   }
 }
 
@@ -1028,6 +1063,25 @@ async function resolveTrade(id, outcome) {
   const r = await api(`/paper/trades/${id}/resolve`,'POST',{outcome});
   if (r.pnl != null) alert(`${t('alertSettled')} ${r.pnl>=0?t('profit'):t('loss')} $${Math.abs(r.pnl).toFixed(2)}`);
   loadPage();
+}
+
+async function paperAutoSettle() {
+  try {
+    const r = await api('/paper/auto-settle', 'POST');
+    const settled = r.settled?.length || 0;
+    const open = r.still_open?.length || 0;
+    if (settled === 0 && r.checked === 0) {
+      alert('No open trades to settle.');
+    } else if (settled === 0) {
+      alert(`Checked ${r.checked} trades — none have resolved yet (${open} still open).`);
+    } else {
+      const pnl = r.settled.reduce((sum, t) => sum + (t.pnl || 0), 0);
+      alert(`Settled ${settled} trade(s)!\nTotal PnL: ${pnl>=0?'+':''}$${pnl.toFixed(2)}\nStill open: ${open}`);
+    }
+    loadPage();
+  } catch(e) {
+    alert('Error: ' + e);
+  }
 }
 
 async function resetPaper() {

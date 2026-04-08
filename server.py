@@ -136,6 +136,48 @@ def api_reset(balance: float = 1000.0):
     return reset_paper_account(balance)
 
 
+@app.post("/api/paper/auto-settle")
+def api_auto_settle():
+    """
+    Check all open paper trades against Polymarket API.
+    If the market has resolved, automatically settle the trade.
+    """
+    open_trades = [t for t in get_paper_trades() if not t["resolved"]]
+    results = {"checked": len(open_trades), "settled": [], "still_open": [], "errors": []}
+
+    for trade in open_trades:
+        slug = trade["market_slug"]
+        try:
+            raw = _poly.get_market(slug)
+            if not raw:
+                results["errors"].append(f"{slug}: market not found")
+                continue
+
+            market = _poly.parse_market(raw)
+
+            if not market.resolved or not market.resolution:
+                results["still_open"].append(slug)
+                continue
+
+            # Market has resolved — settle the trade
+            outcome = market.resolution.upper()  # "YES" or "NO"
+            settled = resolve_paper_trade(trade["id"], outcome)
+            settled["market_slug"] = slug
+            settled["auto_settled"] = True
+            results["settled"].append(settled)
+            _log(
+                f"Auto-settled {slug[:30]} → {outcome} | PnL: {'+'if settled.get('pnl',0)>=0 else ''}${settled.get('pnl',0):.2f}",
+                "trade" if settled.get("pnl", 0) >= 0 else "error",
+                settled,
+            )
+
+        except Exception as e:
+            results["errors"].append(f"{slug}: {e}")
+            _log(f"Auto-settle error {slug}: {e}", "error")
+
+    return results
+
+
 # ── Phase 4: AI analysis ──────────────────────────────────────────────────────
 
 class AnalyseIn(BaseModel):
