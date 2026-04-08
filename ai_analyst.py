@@ -5,6 +5,7 @@ Output: probability estimate + confidence + reasoning
 """
 from __future__ import annotations
 import os
+import re
 import json
 import urllib.request
 import urllib.parse
@@ -103,13 +104,14 @@ Please provide your probability estimate and analysis."""
                 model=MODEL,
                 max_tokens=1024,
                 system=ANALYST_SYSTEM,
-                messages=[
-                    {"role": "user", "content": prompt},
-                    {"role": "assistant", "content": "{"},
-                ],
+                messages=[{"role": "user", "content": prompt}],
             )
-            text = "{" + msg.content[0].text.strip()
-            result = json.loads(text)
+            text = msg.content[0].text.strip()
+            # Extract JSON object from response
+            m = re.search(r'\{[\s\S]*\}', text)
+            if not m:
+                raise ValueError(f"No JSON found in response: {text[:100]}")
+            result = json.loads(m.group())
             result["market_price"] = market_price
             result["edge"] = round(result.get("yes_probability", market_price) - market_price, 4)
             return result
@@ -172,13 +174,13 @@ Output ONLY a JSON array, no other text:
             msg = self._client.messages.create(
                 model=MODEL,
                 max_tokens=512,
-                messages=[
-                    {"role": "user", "content": prompt},
-                    {"role": "assistant", "content": "["},
-                ],
+                messages=[{"role": "user", "content": prompt}],
             )
-            text = "[" + msg.content[0].text.strip()
-            return json.loads(text)
+            text = msg.content[0].text.strip()
+            m = re.search(r'\[[\s\S]*\]', text)
+            if not m:
+                return []
+            return json.loads(m.group())
         except Exception:
             return []
 
