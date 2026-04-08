@@ -521,7 +521,7 @@ async function recentPredictionsTable() {
 
 // ── Markets ───────────────────────────────────────────────────────────────────
 async function renderMarkets() {
-  const d = await api('/markets?limit=50');
+  const d = await api('/markets?limit=200');
   const markets = d.markets;
   const el = document.getElementById('content');
   el.innerHTML = `
@@ -965,7 +965,7 @@ function readCfg() {
     min_edge:       parseFloat(document.getElementById('at-edge').value) || 0.05,
     trade_size:     parseFloat(document.getElementById('at-size').value) || 20,
     interval_min:   parseInt(document.getElementById('at-interval').value) || 30,
-    scan_limit:     50,
+    scan_limit:     300,
   };
 }
 
