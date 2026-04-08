@@ -154,7 +154,7 @@ Please provide:
 
         market_list = "\n".join([
             f"- slug={m['slug']} | {m['question']} | price={m['yes_price']*100:.1f}% | volume=${m['volume']:,.0f}"
-            for m in markets[:50]
+            for m in markets[:200]
         ])
 
         prompt = f"""You are a prediction market analyst. Review these Polymarket markets and find trading opportunities.
