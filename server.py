@@ -148,6 +148,46 @@ def api_reset(balance: float = 1000.0):
     return reset_paper_account(balance)
 
 
+@app.get("/api/paper/expired")
+def api_paper_expired():
+    """
+    Return open trades where the market end_date has passed but
+    Polymarket hasn't resolved the market yet.
+    """
+    open_trades = [t for t in get_paper_trades() if not t["resolved"]]
+    now = datetime.datetime.utcnow()
+    expired = []
+    for trade in open_trades:
+        slug = trade["market_slug"]
+        try:
+            raw = _poly.get_market(slug)
+            if not raw:
+                continue
+            market = _poly.parse_market(raw)
+            if market.resolved:
+                continue  # will be caught by auto-settle
+            if not market.end_date:
+                continue
+            # Parse end_date — Polymarket returns ISO format
+            end_str = market.end_date.replace("Z", "+00:00")
+            try:
+                end_dt = datetime.datetime.fromisoformat(end_str).replace(tzinfo=None)
+            except Exception:
+                continue
+            if end_dt < now:
+                expired.append({
+                    "id": trade["id"],
+                    "market_slug": slug,
+                    "question": trade["question"],
+                    "side": trade["side"],
+                    "end_date": market.end_date,
+                    "hours_overdue": round((now - end_dt).total_seconds() / 3600, 1),
+                })
+        except Exception:
+            continue
+    return {"expired": expired}
+
+
 @app.post("/api/paper/auto-settle")
 def api_auto_settle():
     """

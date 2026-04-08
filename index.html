@@ -631,10 +631,28 @@ async function renderJournal() {
 
 // ── Paper Trading ─────────────────────────────────────────────────────────────
 async function renderPaper() {
-  const [d, stats] = await Promise.all([api('/paper/trades'), api('/paper/stats')]);
+  const [d, stats, expiredData] = await Promise.all([
+    api('/paper/trades'), api('/paper/stats'), api('/paper/expired'),
+  ]);
   const trades = d.trades.reverse();
+  const expired = expiredData.expired || [];
   const el = document.getElementById('content');
   el.innerHTML = `
+    ${expired.length ? `
+    <div class="alert" style="background:#3a2a00;border:1px solid var(--yellow);color:var(--yellow);margin-bottom:16px;display:flex;align-items:flex-start;gap:10px">
+      <div style="font-size:20px">⏰</div>
+      <div>
+        <strong>市场已结束，等待 Polymarket 官方结算：</strong><br>
+        ${expired.map(e=>`
+          <div style="margin-top:6px;font-size:13px">
+            • <b>${e.question.substring(0,50)}…</b>
+            已超时 <b>${e.hours_overdue}小时</b>，交易方向: <span class="badge badge-${e.side=='YES'?'yes':'no'}">${e.side}</span>
+            &nbsp;<button class="btn btn-sm" style="font-size:11px;padding:2px 8px;border-color:var(--yellow);color:var(--yellow)" onclick="resolveTrade('${e.id}','${e.side=='YES'?'NO':'YES'}')">手动结算</button>
+            <button class="btn btn-sm" style="font-size:11px;padding:2px 8px;border-color:var(--green);color:var(--green)" onclick="resolveTrade('${e.id}','${e.side}')">手动结算(赢)</button>
+          </div>`).join('')}
+        <div style="margin-top:8px;font-size:12px;opacity:0.8">Polymarket 通常在赛事结束后数小时内结算，也可点 <b>Auto Settle</b> 尝试自动结算。</div>
+      </div>
+    </div>` : ''}
     <div class="grid grid-4" style="margin-bottom:16px">
       <div class="card"><h3>${t('balance')}</h3><div class="stat-val pos">$${stats.balance?.toFixed(2)||'1000.00'}</div></div>
       <div class="card"><h3>${t('totalPnl')}</h3><div class="stat-val ${stats.total_pnl>=0?'pos':'neg'}">${stats.total_pnl!=null?(stats.total_pnl>=0?'+':'')+'$'+stats.total_pnl?.toFixed(2):'—'}</div></div>
