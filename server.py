@@ -58,7 +58,7 @@ app = FastAPI(title="Polymarket Trader", lifespan=lifespan)
 # ── Market data ───────────────────────────────────────────────────────────────
 
 @app.get("/api/markets")
-def api_markets(limit: int = 50, category: str = "", closed: bool = False):
+def api_markets(limit: int = 200, category: str = "", closed: bool = False):
     try:
         markets = _poly.fetch_markets(limit=limit, category=category, closed=closed)
         return {"markets": [m.__dict__ for m in markets]}
