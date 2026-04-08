@@ -152,23 +152,30 @@ Please provide:
         if not self._client:
             return []
 
+        # Pre-filter: exclude near-certain markets (price < 5% or > 95%) — no edge possible
+        tradeable = [
+            m for m in markets
+            if 0.05 <= m.get('yes_price', 0.5) <= 0.95
+        ]
+
         market_list = "\n".join([
             f"- slug={m['slug']} | {m['question']} | price={m['yes_price']*100:.1f}% | vol=${m['volume']:,.0f} | liq=${m.get('liquidity',0):,.0f}"
-            for m in markets
+            for m in tradeable
         ])
 
-        prompt = f"""You are a prediction market analyst. Review these Polymarket markets and find trading opportunities.
+        prompt = f"""You are a prediction market analyst. Review these Polymarket markets and find mispriced opportunities.
 
 {market_list}
 
 Rules:
-- Look for markets where the price seems WRONG vs what you know (e.g. price=10% but you think it should be 30%+)
-- Prefer markets with volume > $1000 (more liquid)
-- Avoid markets priced 45-55% (too uncertain)
-- Always pick exactly 3, even if opportunities are modest
+- ONLY pick markets where you believe the price is SIGNIFICANTLY WRONG (at least 8% off fair value)
+- Prefer markets with liquidity > $10,000 (easier to enter/exit)
+- Avoid markets priced 45-55% (too uncertain to have an edge)
+- Avoid markets expiring within 24 hours (no time to be right)
+- Pick exactly 3 best opportunities
 
 Output ONLY a JSON array, no other text:
-[{{"slug": "...", "reason": "...", "suggested_side": "YES or NO"}}]"""
+[{{"slug": "...", "reason": "brief reason why price is wrong", "suggested_side": "YES or NO"}}]"""
 
         try:
             msg = self._client.messages.create(
