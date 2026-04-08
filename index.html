@@ -129,6 +129,10 @@ textarea{resize:vertical;min-height:70px}
       <span class="nav-icon">🤖</span><span data-i18n="navAI">AI Analysis</span>
       <span class="phase-badge p4" data-i18n="phase4">Phase 4</span>
     </button>
+    <button class="nav-item" onclick="showPage('auto')">
+      <span class="nav-icon">⚡</span><span data-i18n="navAuto">AI Auto Trade</span>
+      <span class="phase-badge p4" data-i18n="phase4">Phase 4</span>
+    </button>
     <button class="nav-item" onclick="showPage('resolved')">
       <span class="nav-icon">✅</span><span data-i18n="navResolved">Resolved</span>
       <span class="phase-badge p1" data-i18n="phaseLearn">Learn</span>
@@ -257,7 +261,7 @@ const T = {
   en: {
     appSub: 'Polymarket Prediction System',
     navOverview: 'Overview', navMarkets: 'Markets', navJournal: 'Journal',
-    navPaper: 'Paper Trading', navAI: 'AI Analysis', navResolved: 'Resolved',
+    navPaper: 'Paper Trading', navAI: 'AI Analysis', navResolved: 'Resolved', navAuto: 'AI Auto Trade',
     phase1: 'Phase 1', phase2: 'Phase 2', phase4: 'Phase 4', phaseLearn: 'Learn',
     loading: 'Loading…',
     refresh: '↻',
@@ -324,7 +328,7 @@ const T = {
   zh: {
     appSub: 'Polymarket 预测系统',
     navOverview: '总览', navMarkets: '市场浏览', navJournal: '预测日志',
-    navPaper: '纸上交易', navAI: 'AI 分析', navResolved: '已结算',
+    navPaper: '纸上交易', navAI: 'AI 分析', navResolved: '已结算', navAuto: 'AI 自动交易',
     phase1: '阶段1', phase2: '阶段2', phase4: '阶段4', phaseLearn: '学习',
     loading: '加载中…',
     refresh: '↻',
@@ -401,7 +405,7 @@ function applyStaticLang() {
   document.querySelectorAll('[data-i18n-ph]').forEach(el => {
     el.placeholder = t(el.dataset.i18nPh);
   });
-  const titleKeys = {overview:'navOverview',markets:'navMarkets',journal:'navJournal',paper:'navPaper',ai:'navAI',resolved:'navResolved'};
+  const titleKeys = {overview:'navOverview',markets:'navMarkets',journal:'navJournal',paper:'navPaper',ai:'navAI',auto:'navAuto',resolved:'navResolved'};
   document.getElementById('page-title').textContent = t(titleKeys[currentPage] || 'navOverview');
 }
 
@@ -411,7 +415,7 @@ function showPage(page) {
   currentPage = page;
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
   event.currentTarget.classList.add('active');
-  const titleKeys = {overview:'navOverview',markets:'navMarkets',journal:'navJournal',paper:'navPaper',ai:'navAI',resolved:'navResolved'};
+  const titleKeys = {overview:'navOverview',markets:'navMarkets',journal:'navJournal',paper:'navPaper',ai:'navAI',auto:'navAuto',resolved:'navResolved'};
   document.getElementById('page-title').textContent = t(titleKeys[page]) || page;
   loadPage();
 }
@@ -425,6 +429,7 @@ async function loadPage() {
     case 'journal':   await renderJournal(); break;
     case 'paper':     await renderPaper(); break;
     case 'ai':        await renderAI(); break;
+    case 'auto':      await renderAuto(); break;
     case 'resolved':  await renderResolved(); break;
   }
 }
@@ -765,6 +770,180 @@ function renderAnalysisResult(elId, r) {
 }
 
 // ── Resolved Markets (Learning) ───────────────────────────────────────────────
+// ── AI Auto Trade ─────────────────────────────────────────────────────────────
+let _autoTimer = null;
+let _autoCfg = { min_confidence: 0.65, min_edge: 0.05, trade_size: 20, scan_limit: 20 };
+let _autoIntervalMin = 30;
+
+async function renderAuto() {
+  const [stats, logData] = await Promise.all([api('/paper/stats'), api('/ai/auto-log')]);
+  const running = _autoTimer !== null;
+  const el = document.getElementById('content');
+  el.innerHTML = `
+    <div class="alert alert-info" style="margin-bottom:16px">
+      ⚡ AI Auto Paper Trading — AI scans markets every N minutes, analyses candidates, and places paper trades automatically when confidence is high enough.
+    </div>
+
+    <div class="grid grid-2" style="margin-bottom:16px">
+      <!-- Controls -->
+      <div class="card">
+        <h3>⚙️ Configuration</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+          <div class="form-group">
+            <label>Min Confidence</label>
+            <input type="number" id="at-confidence" step="0.05" min="0.5" max="1" value="${_autoCfg.min_confidence}">
+          </div>
+          <div class="form-group">
+            <label>Min Edge</label>
+            <input type="number" id="at-edge" step="0.01" min="0.01" max="0.5" value="${_autoCfg.min_edge}">
+          </div>
+          <div class="form-group">
+            <label>Trade Size (USD)</label>
+            <input type="number" id="at-size" step="5" min="5" max="100" value="${_autoCfg.trade_size}">
+          </div>
+          <div class="form-group">
+            <label>Scan Interval (min)</label>
+            <input type="number" id="at-interval" step="5" min="5" max="120" value="${_autoIntervalMin}">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:4px">
+          <button class="btn ${running ? 'btn-danger' : 'btn-success'}" id="at-toggle" onclick="toggleAutoTrade()">
+            ${running ? '⏹ Stop Auto Trade' : '▶ Start Auto Trade'}
+          </button>
+          <button class="btn btn-outline" onclick="runOneCycle()" ${running ? 'disabled' : ''}>
+            🔄 Run Once Now
+          </button>
+        </div>
+        <div id="at-status" style="margin-top:10px;font-size:12px;color:var(--muted)">
+          ${running ? `⚡ Running — next scan in <span id="at-countdown"></span>` : 'Stopped'}
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="card">
+        <h3>📊 Paper Account</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px">
+          <div>
+            <div style="font-size:11px;color:var(--muted)">BALANCE</div>
+            <div style="font-size:22px;font-weight:700;color:var(--green)">$${stats.balance?.toFixed(2)||'1000.00'}</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--muted)">P&L</div>
+            <div style="font-size:22px;font-weight:700;color:${stats.total_pnl>=0?'var(--green)':'var(--red)'}">${stats.total_pnl!=null?(stats.total_pnl>=0?'+':'')+'$'+stats.total_pnl?.toFixed(2):'—'}</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--muted)">WIN RATE</div>
+            <div style="font-size:22px;font-weight:700;color:${stats.win_rate>=.55?'var(--green)':'var(--muted)'}">${stats.win_rate!=null?Math.round(stats.win_rate*100)+'%':'—'}</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--muted)">OPEN TRADES</div>
+            <div style="font-size:22px;font-weight:700">${stats.open_trades||0}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Activity Log -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="margin:0">⚡ Activity Log</h3>
+        <button class="btn btn-outline btn-sm" onclick="renderAuto()">↻ Refresh</button>
+      </div>
+      <div id="at-log" style="font-family:monospace;font-size:12px;max-height:400px;overflow-y:auto">
+        ${renderAutoLog(logData.log)}
+      </div>
+    </div>
+  `;
+
+  if (running) startCountdown();
+}
+
+function renderAutoLog(log) {
+  if (!log || !log.length) return '<div style="color:var(--muted);padding:20px;text-align:center">No activity yet — start auto trade or run once.</div>';
+  return log.map(e => {
+    const color = e.status === 'trade' ? 'var(--green)' : e.status === 'error' ? 'var(--red)' : e.status === 'skip' ? 'var(--muted)' : 'var(--text)';
+    const prefix = e.status === 'trade' ? '💰' : e.status === 'error' ? '❌' : e.status === 'skip' ? '⏭' : 'ℹ️';
+    return `<div style="padding:5px 8px;border-bottom:1px solid var(--border);color:${color}">
+      <span style="color:var(--muted)">${e.time}</span> ${prefix} ${e.msg}
+      ${e.trade ? `<span style="color:var(--blue)"> → Trade #${e.trade.id}</span>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function saveCfg() {
+  _autoCfg.min_confidence = parseFloat(document.getElementById('at-confidence').value) || 0.65;
+  _autoCfg.min_edge       = parseFloat(document.getElementById('at-edge').value) || 0.05;
+  _autoCfg.trade_size     = parseFloat(document.getElementById('at-size').value) || 20;
+  _autoIntervalMin        = parseInt(document.getElementById('at-interval').value) || 30;
+  _autoCfg.scan_limit     = 20;
+}
+
+async function runOneCycle() {
+  saveCfg();
+  const btn = document.getElementById('at-toggle');
+  document.getElementById('at-status').innerHTML = '<span style="color:var(--yellow)">🔄 Scanning…</span>';
+  try {
+    const r = await api('/ai/auto-trade', 'POST', _autoCfg);
+    const logData = await api('/ai/auto-log');
+    document.getElementById('at-log').innerHTML = renderAutoLog(logData.log);
+    document.getElementById('at-status').innerHTML =
+      `✅ Done — scanned ${r.scanned}, traded ${r.traded}, skipped ${r.skipped}` +
+      (r.error ? ` <span style="color:var(--red)">${r.error}</span>` : '');
+    // refresh stats
+    const stats = await api('/paper/stats');
+    // update stats display inline
+  } catch(e) {
+    document.getElementById('at-status').innerHTML = `<span style="color:var(--red)">❌ ${e}</span>`;
+  }
+}
+
+let _countdown = 0;
+let _countdownTimer = null;
+
+function startCountdown() {
+  _countdown = _autoIntervalMin * 60;
+  if (_countdownTimer) clearInterval(_countdownTimer);
+  _countdownTimer = setInterval(() => {
+    _countdown--;
+    const el = document.getElementById('at-countdown');
+    if (el) {
+      const m = Math.floor(_countdown / 60), s = _countdown % 60;
+      el.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    }
+    if (_countdown <= 0) clearInterval(_countdownTimer);
+  }, 1000);
+}
+
+async function toggleAutoTrade() {
+  if (_autoTimer) {
+    // Stop
+    clearInterval(_autoTimer);
+    if (_countdownTimer) clearInterval(_countdownTimer);
+    _autoTimer = null;
+    _countdownTimer = null;
+    await renderAuto();
+  } else {
+    // Start
+    saveCfg();
+    // Run immediately then on interval
+    await runOneCycle();
+    _autoTimer = setInterval(async () => {
+      await runOneCycle();
+      startCountdown();
+    }, _autoIntervalMin * 60 * 1000);
+    startCountdown();
+    // Update button
+    const btn = document.getElementById('at-toggle');
+    if (btn) {
+      btn.textContent = '⏹ Stop Auto Trade';
+      btn.className = 'btn btn-danger';
+    }
+    document.getElementById('at-status').innerHTML =
+      `⚡ Running — next scan in <span id="at-countdown"></span>`;
+    startCountdown();
+  }
+}
+
 async function renderResolved() {
   const d = await api('/markets/resolved?limit=30');
   const markets = d.markets;
