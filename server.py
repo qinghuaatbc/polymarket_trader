@@ -298,7 +298,7 @@ def _run_auto_cycle(cfg: AutoTradeConfig) -> dict:
         _log(f"Insufficient balance (${balance:.2f})", "error")
         return {**results, "error": f"Insufficient balance: ${balance:.2f}"}
 
-    if open_trades >= 10:
+    if open_trades >= 15:
         _log(f"Too many open trades ({open_trades}), skipping scan", "skip")
         return {**results, "skipped": open_trades}
 
@@ -322,8 +322,15 @@ def _run_auto_cycle(cfg: AutoTradeConfig) -> dict:
         _log("No candidates found this cycle", "skip")
         return results
 
+    # Track already-open slugs to avoid doubling up
+    open_slugs = {t["market_slug"] for t in get_paper_trades() if not t.get("resolved")}
+
     for opp in candidates[:3]:
         slug = opp.get("slug", "")
+        if slug in open_slugs:
+            _log(f"SKIP {slug[:30]} — already have open position", "skip")
+            results["skipped"] += 1
+            continue
         mkt = next((m for m in market_list if m["slug"] == slug), None)
         if not mkt:
             continue
