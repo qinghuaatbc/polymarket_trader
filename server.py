@@ -298,7 +298,7 @@ def _run_auto_cycle(cfg: AutoTradeConfig) -> dict:
         _log(f"Insufficient balance (${balance:.2f})", "error")
         return {**results, "error": f"Insufficient balance: ${balance:.2f}"}
 
-    if open_trades >= 20:
+    if open_trades >= 30:
         _log(f"Too many open trades ({open_trades}), skipping scan", "skip")
         return {**results, "skipped": open_trades}
 
